@@ -24,7 +24,7 @@ public final class PartyHudMarks {
     /** Colocación de PartyOverlay (Cobblemon 1.7.3): 30 de alto, paso 34; retrato 21x21 en x = 22 (+6 el seleccionado). */
     private static final int SLOT_STEP = 34, SLOT_HEIGHT = 30, PORTRAIT_X = 22, PORTRAIT_SIZE = 21, SELECTED_SHIFT = 6;
     /** Ancho del hueco del equipo en la pantalla de datos (PartySlotWidget.WIDTH). */
-    private static final int SUMMARY_SLOT_W = 46;
+    private static final int SUMMARY_SLOT_W = 46, SUMMARY_SLOT_H = 27;
     private static int errors;
 
     private PartyHudMarks() {
@@ -64,13 +64,14 @@ public final class PartyHudMarks {
         }
     }
 
-    /** Hueco del equipo en la pantalla de datos: la marca va justo encima, a la derecha. */
+    /** Hueco del equipo en la pantalla de datos: la marca va debajo del nombre, a la izquierda. */
     public static void summarySlot(DrawContext ctx, Pokemon mon, int x, int y) {
         try {
             if (mon == null || !enabled()) return;
             ctx.getMatrices().push();
             ctx.getMatrices().translate(0, 0, 300);
-            SlotMarks.ivBarAbove(ctx, x + SUMMARY_SLOT_W - 2, y - 1, PcReader.info(mon));
+            // Debajo del nombre y de la barra de vida del propio hueco (no encima, que parece del de arriba).
+            SlotMarks.ivBarBelow(ctx, x + 1, y + SUMMARY_SLOT_H + 3, PcReader.info(mon));
             ctx.getMatrices().pop();
         } catch (Throwable t) {
             if (errors++ < 3) OrganizerPCClient.LOGGER.error("Marcas de IVs en datos", t);

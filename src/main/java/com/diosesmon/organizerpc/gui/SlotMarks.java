@@ -51,6 +51,12 @@ final class SlotMarks {
         if (bar != null) bar.draw(ctx, right - bar.w, bottom - bar.h, info);
     }
 
+    /** La marca con su esquina de arriba a la izquierda en ({@code left}, {@code top}). */
+    static void ivBarBelow(DrawContext ctx, int left, int top, PokemonInfo info) {
+        Bar bar = Bar.of(info);
+        if (bar != null) bar.draw(ctx, left, top, info);
+    }
+
     /** Medidas de una marca. El número se escala a píxeles enteros de pantalla (no se deforma en x3). */
     private record Bar(int n, int zeros, int dot, float textScale, int w, int h) {
         static Bar of(PokemonInfo info) {
