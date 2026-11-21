@@ -48,7 +48,6 @@ public final class OrganizerPCClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(MoveExecutor::tick);
         AfkTracker.register();
         net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(com.diosesmon.organizerpc.gui.Pairs.KEY);
-        net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents.AFTER_ENTITIES.register(com.diosesmon.organizerpc.gui.PartyNameplates::render);
         // Living dex: familia evolutiva en orden de Pokédex (de los JSON de especies de Cobblemon).
         java.util.Map<String, java.util.List<String>> famCache = new java.util.concurrent.ConcurrentHashMap<>();
         com.diosesmon.organizerpc.core.LivingDex.families = id -> famCache.computeIfAbsent(id, k -> {

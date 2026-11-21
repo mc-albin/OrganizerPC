@@ -107,7 +107,6 @@ public final class PartyHudMarks {
             any = true;
         }
         if (!any) return null;
-        if (n > 0) line.append(Text.literal(" " + n + "x31").withColor(SlotMarks.countColor(n)));
         return line;
     }
 }

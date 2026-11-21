@@ -6,7 +6,8 @@
   "client": [
     "StorageWidgetAccessor",
     "PartyOverlayMarksMixin",
-    "SummaryPartySlotMixin"
+    "SummaryPartySlotMixin",
+    "PokemonNameTagMixin"
   ],
   "injectors": {
     "defaultRequire": 1
