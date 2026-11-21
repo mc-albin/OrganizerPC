@@ -71,7 +71,7 @@ public final class PartyHudMarks {
             ctx.getMatrices().push();
             ctx.getMatrices().translate(0, 0, 300);
             // Debajo del nombre y de la barra de vida del propio hueco (no encima, que parece del de arriba).
-            SlotMarks.ivBarBelow(ctx, x + 1, y + SUMMARY_SLOT_H + 3, PcReader.info(mon));
+            SlotMarks.ivBarBelow(ctx, x + 1, y + SUMMARY_SLOT_H + 1, PcReader.info(mon));
             ctx.getMatrices().pop();
         } catch (Throwable t) {
             if (errors++ < 3) OrganizerPCClient.LOGGER.error("Marcas de IVs en datos", t);
