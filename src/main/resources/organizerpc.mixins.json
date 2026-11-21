@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.diosesmon.organizerpc.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "StorageWidgetAccessor",
+    "PartyOverlayMarksMixin",
+    "SummaryPartySlotMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

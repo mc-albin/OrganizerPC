@@ -1,0 +1,89 @@
+plugins {
+    id 'fabric-loom' version '1.7.4'
+    id 'java'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven { name = 'Cobblemon'; url = 'https://maven.impactdev.net/repository/development/' }
+    mavenCentral()
+}
+
+sourceSets {
+    // Auto-test solo de desarrollo: NO se incluye en OrganizerPC.jar.
+    selftest {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
+loom {
+    mods {
+        organizerpc {
+            sourceSet sourceSets.main
+        }
+        organizerpc_selftest {
+            sourceSet sourceSets.selftest
+        }
+    }
+    runs {
+        selftestClient {
+            client()
+            name = "Selftest Client"
+            source sourceSets.selftest
+            programArgs "--quickPlaySingleplayer", "selftest"
+            vmArg "-Dorganizerpc.selftest=true"
+            runDir "run"
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Cobblemon solo para compilar: el jugador ya lo tiene instalado. No se incluye en el jar.
+    modCompileOnly("com.cobblemon:fabric:${project.cobblemon_version}") { transitive = false }
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_stdlib_version}"
+
+    // Solo para ejecutar el juego de desarrollo (runClient/runServer/selftest).
+    modLocalRuntime("com.cobblemon:fabric:${project.cobblemon_version}") { transitive = false }
+    selftestCompileOnly "org.jetbrains.kotlin:kotlin-stdlib:${project.kotlin_stdlib_version}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Nombre final exacto pedido: OrganizerPC.jar
+remapJar {
+    archiveFileName = 'OrganizerPC.jar'
+}

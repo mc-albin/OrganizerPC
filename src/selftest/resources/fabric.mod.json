@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "organizerpc_selftest",
+  "version": "1.0.0",
+  "name": "OrganizerPC Selftest (solo desarrollo)",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.diosesmon.organizerpc.gui.SelfTest"]
+  },
+  "depends": {
+    "organizerpc": "*",
+    "cobblemon": "*"
+  }
+}

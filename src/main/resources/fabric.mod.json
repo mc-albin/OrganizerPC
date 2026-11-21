@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "organizerpc",
+  "version": "${version}",
+  "name": "OrganizerPC",
+  "description": "Organizador integrado en la PC de Cobblemon: categorías, búsqueda y filtros (IVs, grupo huevo, género, shiny, tamaño), vista previa y movimiento real entre cajas. Se actualiza solo desde GitHub. Solo cliente.",
+  "authors": ["mc-albin"],
+  "license": "All-Rights-Reserved",
+  "icon": "assets/organizerpc/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.diosesmon.organizerpc.OrganizerPCClient"]
+  },
+  "mixins": ["organizerpc.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.7.3 <1.8"
+  }
+}
