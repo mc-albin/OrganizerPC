@@ -44,4 +44,13 @@ public final class OrganizerConfig {
     public boolean ivMarksParty = true;
     /** Panel derecho (Categorías / Mover) plegado: queda solo una pestañita en el borde. */
     public boolean sidePanelCollapsed = false;
+    /** Parejas de crianza marcadas a mano (P1, P2…): solo ayuda visual. */
+    public final List<BreedingPair> pairs = new ArrayList<>();
+
+    /** Pareja a la que pertenece un Pokémon, o null. */
+    public BreedingPair pairOf(java.util.UUID uuid) {
+        if (uuid == null) return null;
+        for (BreedingPair p : pairs) if (p.members.contains(uuid)) return p;
+        return null;
+    }
 }

@@ -58,6 +58,19 @@ public final class PcScreenHook {
             BoxStorageSlot slot = panel.slotAt(mx, my);
             // Durante la ejecución no se puede arrastrar: la PC no debe cambiar a mitad del plan.
             if (MoveExecutor.isRunning() && slot != null) return false;
+            if (PanelState.pairMode && button == 0) {
+                Pokemon mon = slot != null ? slot.getPokemon() : null;
+                if (mon == null) {
+                    for (var ps : panel.partySlots()) {
+                        if (mx >= ps.getX() && mx < ps.getX() + com.cobblemon.mod.common.client.gui.pc.StorageSlot.SIZE
+                                && my >= ps.getY() && my < ps.getY() + com.cobblemon.mod.common.client.gui.pc.StorageSlot.SIZE) mon = ps.getPokemon();
+                    }
+                }
+                if (mon != null) {
+                    Pairs.toggle(mon.getUuid(), com.diosesmon.organizerpc.cobblemon.PcReader.info(mon).name());
+                    return false;
+                }
+            }
             if (panel.moveWindowVisible() && button == 0 && slot != null) {
                 Pokemon p = slot.getPokemon();
                 if (p != null) {
@@ -97,6 +110,11 @@ public final class PcScreenHook {
             }
             if (PanelState.settingsOpen && key == GLFW.GLFW_KEY_ESCAPE) {
                 SettingsWindow.close();
+                return false;
+            }
+            if (!PanelState.settingsOpen && Pairs.keyPressed(panel, key, scancode)) return false;
+            if (PanelState.pairMode && key == GLFW.GLFW_KEY_ESCAPE) {
+                PanelState.pairMode = false;
                 return false;
             }
             if (OrganizerPCClient.config().hidden) return true;

@@ -77,12 +77,12 @@ public final class OrganizerPanel {
     int mvX, mvY, mvW, mvH;
     static final int SW_W = 310, SW_H = 258;
     /** Botones a la izquierda de la barra de cajas: bloquear, captura, ocultar, IVs, huevo, ajustes y tutorial. */
-    static final int MODE_BUTTONS = 7;
+    static final int MODE_BUTTONS = 8;
     static final int AW_W = 210, AW_H = 284;
     /** Rectángulos de botones (para el tutorial): {x, y, w, h}. */
     int[] rOrganize = new int[4], rLock = new int[4], rCapture = new int[4], rHide = new int[4], rMove = new int[4],
             rAfk = new int[4], rEgg = new int[4], rBook = new int[4], rIvs = new int[4], rFilter = new int[4], rSearch = new int[4],
-            rSettings = new int[4];
+            rSettings = new int[4], rPairs = new int[4];
     /** La caja de búsqueda se dibujó este frame (no hay vista previa ni movimiento). */
     boolean searchShown;
     /** Zonas del editor de categorías para la guía: nombre, botón Listo y lista con scroll. */
@@ -555,7 +555,10 @@ public final class OrganizerPanel {
         Search.refresh(snapshot);
         // La caja de la PC (vista previa y marcas) va en coordenadas reales.
         PreviewOverlay.render(this, ctx, delta);
-        if (PanelState.preview == null) SlotMarks.render(this, ctx, mx, my);
+        if (PanelState.preview == null) {
+            SlotMarks.render(this, ctx, mx, my);
+            Pairs.renderSlots(this, ctx);
+        }
 
         // Todo lo del organizador va en coordenadas virtuales (escaladas).
         int rmx = mx, rmy = my;

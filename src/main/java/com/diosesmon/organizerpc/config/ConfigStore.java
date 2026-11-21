@@ -106,6 +106,17 @@ public final class ConfigStore {
         o.addProperty("uiSize", cfg.uiSize);
         o.addProperty("ivMarksParty", cfg.ivMarksParty);
         o.addProperty("sidePanelCollapsed", cfg.sidePanelCollapsed);
+        JsonArray pairs = new JsonArray();
+        for (com.diosesmon.organizerpc.core.BreedingPair bp : cfg.pairs) {
+            JsonObject po = new JsonObject();
+            po.addProperty("number", bp.number);
+            po.addProperty("color", String.format("#%06X", bp.color & 0xFFFFFF));
+            JsonArray m = new JsonArray();
+            for (java.util.UUID u : bp.members) m.add(u.toString());
+            po.add("members", m);
+            pairs.add(po);
+        }
+        o.add("pairs", pairs);
         JsonArray cats = new JsonArray();
         for (Category c : cfg.categories) cats.add(encode(c));
         o.add("categories", cats);
@@ -177,6 +188,22 @@ public final class ConfigStore {
         if (o.has("ivMarkSize")) cfg.ivMarkSize = Math.max(0, Math.min(2, o.get("ivMarkSize").getAsInt()));
         cfg.captureSort = enumOr(SortMode.class, str(o, "captureSort"), SortMode.NONE);
         cfg.captureSort2 = enumOr(SortMode.class, str(o, "captureSort2"), SortMode.NONE);
+        if (o.has("pairs")) {
+            for (JsonElement e : o.getAsJsonArray("pairs")) {
+                try {
+                    JsonObject po = e.getAsJsonObject();
+                    var bp = new com.diosesmon.organizerpc.core.BreedingPair(Math.max(1, po.get("number").getAsInt()));
+                    Integer col = hex(str(po, "color"));
+                    if (col != null) bp.color = col;
+                    if (po.has("members")) for (JsonElement m : po.getAsJsonArray("members")) {
+                        if (bp.members.size() < 2) bp.members.add(java.util.UUID.fromString(m.getAsString()));
+                    }
+                    cfg.pairs.add(bp);
+                } catch (Exception ignored) {
+                    // Pareja ilegible: se ignora.
+                }
+            }
+        }
         Integer tb = hex(str(o, "themeBase")), ta = hex(str(o, "themeAccent"));
         if (tb != null) cfg.themeBase = tb;
         if (ta != null) cfg.themeAccent = ta;

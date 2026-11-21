@@ -74,7 +74,7 @@ final class Search {
 
     // ------------------------------------------------------------------ texto
 
-    private sealed interface Term permits StatTerm, CountTerm, GroupTerm, NameTerm, DexTerm, GenderTerm, ShinyTerm, SizeTerm {
+    private sealed interface Term permits StatTerm, CountTerm, GroupTerm, NameTerm, DexTerm, GenderTerm, ShinyTerm, SizeTerm, PairTerm {
     }
 
     private record StatTerm(StatKey stat, int value) implements Term {
@@ -94,6 +94,10 @@ final class Search {
     }
 
     private record ShinyTerm() implements Term {
+    }
+
+    /** Pareja de crianza «p1», «p2»… */
+    private record PairTerm(int number) implements Term {
     }
 
     private record SizeTerm(String size) implements Term {
@@ -164,6 +168,11 @@ final class Search {
                 out.add(new GenderTerm(gen));
                 continue;
             }
+            var pm = java.util.regex.Pattern.compile("^p([0-9]{1,2})$").matcher(t);
+            if (pm.matches()) {
+                out.add(new PairTerm(Integer.parseInt(pm.group(1))));
+                continue;
+            }
             if (t.equals("shiny") || t.equals("variocolor")) {
                 out.add(new ShinyTerm());
                 continue;
@@ -195,6 +204,7 @@ final class Search {
                 case DexTerm d -> d.from() == d.to() ? "· Pokédex nº " + d.from() : "· Pokédex del " + d.from() + " al " + d.to();
                 case GenderTerm g -> "· " + genderLabel(g.gender());
                 case ShinyTerm s -> "· Shiny";
+                case PairTerm pt -> "· Pareja P" + pt.number();
                 case SizeTerm z -> "· Tamaño " + z.size();
             });
         }
@@ -240,6 +250,10 @@ final class Search {
                 case DexTerm d -> p.dex() >= d.from() && p.dex() <= d.to();
                 case GenderTerm g -> p.gender() == g.gender();
                 case ShinyTerm s -> p.shiny();
+                case PairTerm pt -> {
+                    var bp = com.diosesmon.organizerpc.OrganizerPCClient.config().pairOf(p.uuid());
+                    yield bp != null && bp.number == pt.number();
+                }
                 case SizeTerm z -> z.size().equals(SizeVariation.sizeOf(p.scale()));
             };
             if (!ok) return false;
@@ -248,7 +262,9 @@ final class Search {
     }
 
     private static String key() {
-        return text + "|" + groups + "|" + eggOnly + "|" + genders + "|" + shinyOnly + "|" + sizes + "|" + java.util.Arrays.toString(stats) + "|" + count;
+        int pairsHash = 0;
+        for (var bp : com.diosesmon.organizerpc.OrganizerPCClient.config().pairs) pairsHash = pairsHash * 31 + bp.number * 7 + bp.members.hashCode();
+        return pairsHash + "|" + text + "|" + groups + "|" + eggOnly + "|" + genders + "|" + shinyOnly + "|" + sizes + "|" + java.util.Arrays.toString(stats) + "|" + count;
     }
 
     static String genderLabel(int g) {

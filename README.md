@@ -14,6 +14,7 @@ Organizador para la PC de Cobblemon (Minecraft 1.21.1, Fabric). Se integra en la
 - **Ordenar cajas**: por IVs, Pokédex, nivel, grupo huevo, **columnas por IV** (completas o con huecos) y **living dex** (cada familia en orden de Pokédex, dejando vacío el hueco de las especies que faltan).
 - **Buscar y filtrar**: especie, grupo huevo, IV de cada estadística (`ps31`, `vel0`), nº de 31 (`3x31`), nº de Pokédex (`25`, `1-151`), género, shiny y tamaño. Las cajas con resultados se iluminan.
 - **Marcas de IVs** en cada Pokémon, en tu equipo (pantalla, datos y debajo del nombre de tus Pokémon sacados).
+- **Parejas de crianza** (P1, P2…): tú marcas qué Pokémon van juntos (modo Parejas o tecla `P` con el ratón encima) y llevan una insignia de color en la caja, el equipo y la barra de cajas. Busca `p1` para encontrarla.
 - Cajas bloqueadas, cajas de captura, mover a mano, AFK, tema de colores y tamaño de la interfaz.
 
 ## Actualizaciones

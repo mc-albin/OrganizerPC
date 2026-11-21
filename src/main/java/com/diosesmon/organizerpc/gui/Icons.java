@@ -22,6 +22,7 @@ final class Icons {
     static final ItemStack PLUS = new ItemStack(Items.WRITABLE_BOOK);
     static final ItemStack HIDE = new ItemStack(Items.ENDER_EYE);
     static final ItemStack FILTER = new ItemStack(Items.HOPPER);
+    static final ItemStack PAIR = of("cobblemon:love_ball", Items.PINK_TULIP);
     static final ItemStack SEARCH = new ItemStack(Items.SPYGLASS);
     static final ItemStack THEME = new ItemStack(Items.MAGENTA_DYE);
     static final ItemStack SIZE = new ItemStack(Items.SPYGLASS);

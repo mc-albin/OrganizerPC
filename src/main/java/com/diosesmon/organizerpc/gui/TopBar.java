@@ -26,6 +26,8 @@ final class TopBar {
             runningRow(ui, ex, rx, ry, rw);
         } else if (PanelState.preview != null) {
             previewRow(p, ui, rx, ry, rw);
+        } else if (PanelState.pairMode) {
+            Pairs.row(p, ui, rx, ry, rw);
         } else if (PanelState.stripMode == PanelState.StripMode.ASSIGN && PanelState.editing != null) {
             Category c = PanelState.editing;
             ui.round(rx, ry + 5, 8, 8, c.color);
@@ -271,6 +273,22 @@ final class TopBar {
         if (upd) ui.round(r[0] + 11, r[1] + 1, 4, 4, Ui.GOLD);
         ui.tooltip(r[0], r[1], 16, 16, "Ajustes", upd ? "¡Hay una versión nueva! Actualízala aquí." : "Marcas, tamaños, tema y más.");
 
+        r = modeRect(p, 7);
+        p.rPairs = r;
+        boolean pairOn = PanelState.pairMode;
+        if (ui.button(r[0], r[1], 16, 16, "", Icons.PAIR, pairOn ? Ui.Style.SELECTED : Ui.Style.NORMAL)) {
+            PanelState.pairMode = !pairOn;
+            if (PanelState.pairMode) {
+                PanelState.stripMode = PanelState.StripMode.NAVIGATE;
+                Pairs.selected();
+                PanelState.status("Elige una pareja arriba y haz click en sus dos Pokémon (o pulsa "
+                        + Pairs.KEY.getBoundKeyLocalizedText().getString() + " con el ratón encima).", Ui.TEXT_DIM);
+            }
+        }
+        ui.tooltip(r[0], r[1], 16, 16, "Parejas de crianza", "Marca a mano qué Pokémon van juntos (P1, P2…)",
+                "para no perderlos entre los demás. No mueve nada.",
+                "Atajo: " + Pairs.KEY.getBoundKeyLocalizedText().getString() + " con el ratón encima de un Pokémon.");
+
         r = modeRect(p, 6);
         p.rBook = r;
         if (ui.button(r[0], r[1], 16, 16, "", Icons.BOOK, Guide.active() ? Ui.Style.SELECTED : Ui.Style.NORMAL)) Guide.open();
@@ -339,6 +357,11 @@ final class TopBar {
                 ui.roundBorder(cx, cy, cw, ch, Ui.GOLD);
                 ui.round(cx + cw - 5, cy + 1, 4, 4, Ui.GOLD);
             }
+            int pairCol = Pairs.boxColor(p, b);
+            if (pairCol != 0) {
+                // Caja con una pareja de crianza: corazón-punto del color de la pareja.
+                ui.round(cx + 1, cy + 1, 5, 5, pairCol);
+            }
             int found = searching ? Search.boxHits(b) : 0;
             if (searching) {
                 if (found > 0) {
@@ -369,6 +392,7 @@ final class TopBar {
                 if (in + out > 0) tip.add("Llegan " + in + " · se van " + out);
             }
             if (searching) tip.add(found == 0 ? "Búsqueda: ninguno aquí" : "Búsqueda: " + found + " aquí");
+            tip.addAll(Pairs.boxTip(p, b));
             tip.add(switch (PanelState.stripMode) {
                 case NAVIGATE -> "Click: ver esta caja";
                 case LOCK -> "Click: " + (locked ? "desbloquear" : "bloquear");

@@ -36,6 +36,7 @@ final class HiddenButton {
             p.partyIvMarks(ctx);
             ctx.getMatrices().pop();
         }
+        Pairs.renderSlots(p, ctx);
         ctx.getMatrices().push();
         ctx.getMatrices().translate(0, 0, 500);
         p.pushScale(ctx);
@@ -185,6 +186,7 @@ final class HiddenButton {
         if (PanelState.editing != null) p.finishEditing();
         p.closeMoveWindow();
         PanelState.arrangeOpen = false;
+        PanelState.pairMode = false;
         OrganizerPCClient.config().hidden = true;
         OrganizerPCClient.saveConfig();
     }

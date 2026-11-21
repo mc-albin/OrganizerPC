@@ -85,6 +85,12 @@ final class PanelState {
     static int guideStep = -1;
     static Guide.Kind guideKind = Guide.Kind.IV_COUNT;
 
+    /** Modo Parejas: click en un Pokémon lo mete o saca de la pareja elegida. */
+    static boolean pairMode;
+    /** Número de la pareja elegida (P1 = 1); 0 = ninguna todavía. */
+    static int selectedPair;
+    /** Pareja con «Borrar» pulsado una vez (pide confirmación). */
+    static int deletePairArmed;
     /** Ya se avisó en esta sesión de que hay una versión nueva. */
     static boolean updateNotified;
     /** Pestaña abierta en Ajustes. */
