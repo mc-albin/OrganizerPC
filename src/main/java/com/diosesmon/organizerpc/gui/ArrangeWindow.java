@@ -42,20 +42,20 @@ final class ArrangeWindow {
         }
         ui.tooltip(lx + 2 * (qw + 3), r, iw - 2 * (qw + 3), 13, "Toca cajas en la barra de arriba.", "Se llenan en el orden en que las elijas.");
         r += 16;
-        // Atajo: cajas de una categoría.
-        if (!p.cfg().categories.isEmpty()) {
-            int fx = lx;
-            int rows = 0;
+        // Atajo: cajas de una categoría. Se ven 2 filas; con más, la rueda del ratón recorre todas (barra a la derecha).
+        if (p.cfg().categories.stream().anyMatch(c -> !c.boxes.isEmpty())) {
+            int lh = 2 * 13, cw = iw - 5;
+            int top = p.listBegin(ui, "arrangeCats", lx, r, iw, lh);
+            int fx = lx, cy = top;
             for (Category c : p.cfg().categories) {
                 if (c.boxes.isEmpty()) continue;
-                int chw = Math.min(iw, ui.width(c.name) + 10);
-                if (fx + chw > lx + iw) {
-                    if (++rows >= 2) break;
+                int chw = Math.min(cw, ui.width(c.name) + 10);
+                if (fx + chw > lx + cw) {
                     fx = lx;
-                    r += 13;
+                    cy += 13;
                 }
                 boolean on = PanelState.arrangeCats.contains(c.id);
-                if (ui.chip(fx, r, chw, 11, c.name, on, c.color)) {
+                if (ui.chip(fx, cy, chw, 11, c.name, on, c.color)) {
                     if (!PanelState.arrangeCats.remove(c.id)) PanelState.arrangeCats.add(c.id);
                     PanelState.arrangeBoxes.clear();
                     for (Category k : p.cfg().categories) {
@@ -63,10 +63,11 @@ final class ArrangeWindow {
                         for (int b : k.boxes) if (!PanelState.arrangeBoxes.contains(b)) PanelState.arrangeBoxes.add(b);
                     }
                 }
-                ui.tooltip(fx, r, chw, 11, "Las cajas de «" + c.name + "»", "Puedes elegir varias categorías.");
+                ui.tooltip(fx, cy, chw, 11, "Las cajas de «" + c.name + "»", "Puedes elegir varias categorías.");
                 fx += chw + 2;
             }
-            r += 14;
+            p.listEnd(ui, "arrangeCats", lx, r, iw, lh, cy + 13 - top);
+            r += lh + 2;
         }
         List<Integer> boxes = PanelState.arrangeBoxes;
         String list = boxes.isEmpty() ? "Ninguna elegida" : "Cajas: " + String.join(", ", boxes.stream().map(b -> String.valueOf(b + 1)).toList());
