@@ -404,6 +404,38 @@ public final class Planner {
         return out;
     }
 
+    /**
+     * Cajas de crianza: coloca {@code ordered} uno tras otro desde el primer hueco de {@code boxes}
+     * (P1 macho, P1 hembra, P2…). El que ocupa un hueco destino se intercambia y queda donde estaba el que llega.
+     * Se saltan los que no están en la PC (equipo, criando) o están en cajas bloqueadas; los que no caben van a noSpace.
+     */
+    public static Plan placeExact(PcModel original, List<UUID> ordered, List<Integer> boxes, Set<Integer> locked) {
+        PcModel m = original.copy();
+        List<Operation> ops = new ArrayList<>();
+        List<Integer> targets = new ArrayList<>();
+        for (int b : boxes) if (b >= 0 && b < m.boxCount() && !locked.contains(b) && !targets.contains(b)) targets.add(b);
+        List<UUID> members = new ArrayList<>();
+        for (UUID u : ordered) {
+            Pos at = m.positionOf(u);
+            if (at != null && !locked.contains(at.box()) && !members.contains(u)) members.add(u);
+        }
+        int cap = targets.size() * PcModel.SLOTS_PER_BOX;
+        List<PokemonInfo> noSpace = new ArrayList<>();
+        for (int i = cap; i < members.size(); i++) noSpace.add(m.info(members.get(i)));
+        List<UUID> fit = members.subList(0, Math.min(cap, members.size()));
+        List<Pos> pos = new ArrayList<>();
+        for (int i = 0; i < fit.size(); i++) pos.add(new Pos(targets.get(i / PcModel.SLOTS_PER_BOX), i % PcModel.SLOTS_PER_BOX));
+        applyTargets(m, ops, fit, pos);
+        List<Plan.Entry> entries = new ArrayList<>();
+        for (UUID u : m.allInfos().keySet()) {
+            Pos a = original.positionOf(u), b = m.positionOf(u);
+            if (a == null || a.equals(b)) continue;
+            entries.add(new Plan.Entry(u, m.info(u), a, b, null, null, List.of(),
+                    fit.contains(u) ? Plan.Reason.MANUAL : Plan.Reason.SWAPPED, null));
+        }
+        return new Plan(Collections.unmodifiableList(ops), entries, noSpace, members.size(), original, m);
+    }
+
     /** Lleva cada Pokémon a su hueco destino: MOVE si está vacío, SWAP si lo ocupa otro. */
     private static void applyTargets(PcModel m, List<Operation> ops, List<UUID> ordered, List<Pos> targets) {
         for (int i = 0; i < ordered.size(); i++) {

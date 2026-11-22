@@ -46,6 +46,19 @@ public final class OrganizerConfig {
     public boolean sidePanelCollapsed = false;
     /** Parejas de crianza marcadas a mano (P1, P2…): solo ayuda visual. */
     public final List<BreedingPair> pairs = new ArrayList<>();
+    /** Pokémon marcados «No usar en la página»: nunca salen en los breeders para la wiki. */
+    public final java.util.Set<java.util.UUID> noWiki = new java.util.LinkedHashSet<>();
+    /** Contar a los Ditto como breeders para la wiki (por defecto no). */
+    public boolean breedDitto = false;
+    /** Cajas de crianza (hasta 2): ahí van las parejas de la wiki; organizar y ordenar no las tocan. */
+    public final List<Integer> breedBoxes = new ArrayList<>();
+
+    /** Bloqueadas más las de crianza: lo que organizar y ordenar no deben tocar. */
+    public java.util.Set<Integer> lockedOrBreed() {
+        java.util.Set<Integer> s = new TreeSet<>(lockedBoxes);
+        s.addAll(breedBoxes);
+        return s;
+    }
 
     /** Pareja a la que pertenece un Pokémon, o null. */
     public BreedingPair pairOf(java.util.UUID uuid) {

@@ -10,8 +10,11 @@ import net.minecraft.client.MinecraftClient;
  * botones «Opción: Sí/No» y «Listo» abajo. Funciona también con el organizador oculto.
  */
 final class SettingsWindow {
-    static final int TAB_GENERAL = 0, TAB_MARKS = 1, TAB_BOXES = 2, TAB_SIZES = 3, TAB_THEME = 4;
-    private static final String[] TABS = {"General", "Marcas", "Cajas", "Tamaños", "Tema"};
+    static final int TAB_GENERAL = 0, TAB_MARKS = 1, TAB_BOXES = 2, TAB_SIZES = 3, TAB_THEME = 4, TAB_BREED = 5;
+    private static final String[] TABS = {"General", "Marcas", "Cajas", "Tamaños", "Tema", "Crianza"};
+    /** Breeders contados para la pestaña Crianza (se recuentan cada segundo, no en cada fotograma). */
+    private static int breederCount = -1;
+    private static long breederCountAt;
 
     private SettingsWindow() {
     }
@@ -68,6 +71,7 @@ final class SettingsWindow {
             case TAB_BOXES -> boxes(p, ui, lx, r, iw);
             case TAB_SIZES -> sizes(p, ui, lx, r, iw);
             case TAB_THEME -> theme(p, ui, lx, r, iw);
+            case TAB_BREED -> breeding(p, ui, lx, r, iw);
             default -> general(p, ui, lx, r, iw);
         }
 
@@ -221,6 +225,116 @@ final class SettingsWindow {
         ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, "Quita la marca de captura de todas las cajas.");
         r += 24;
         r += ui.wrapped(lx, r, iw, "Para bloquear o marcar cajas de captura una a una, usa el candado y la Poké Ball junto a la barra de cajas.", Ui.TEXT_DIM);
+    }
+
+    /** Breeders para la wiki de crianza: Ditto sí/no, descargar el .txt y la marca «No usar». */
+    private static void breeding(OrganizerPanel p, Ui ui, int lx, int r, int iw) {
+        OrganizerConfig c = p.cfg();
+        long now = System.currentTimeMillis();
+        if (breederCount < 0 || now - breederCountAt > 1000) {
+            try {
+                breederCount = com.diosesmon.organizerpc.cobblemon.BreederExport.collect(p.pc()).size();
+            } catch (Exception e) {
+                breederCount = 0;
+            }
+            breederCountAt = now;
+        }
+        ui.text(lx, r, "Breeders para la wiki", Ui.TEXT);
+        ui.textRight(lx + iw, r, breederCount + " Pokémon", Ui.THEME);
+        r += 12;
+        r += ui.wrapped(lx, r, iw, "De 1 a 5 IVs en 31 o algún IV en 0, con grupo huevo. Sin cajas bloqueadas, parejas manuales ni «No usar».",
+                Ui.TEXT_DIM) + 5;
+        int hw = (iw - 4) / 2;
+        if (toggle(ui, lx, r, hw, "Incluir Ditto", c.breedDitto, "Sí: los Ditto también salen como breeders.", "No: la wiki nunca los usa.")) {
+            c.breedDitto = !c.breedDitto;
+            save();
+            com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
+            breederCount = -1;
+        }
+        boolean any = !c.noWiki.isEmpty();
+        if (ui.button(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quitar «No usar» (" + c.noWiki.size() + ")" : "Sin marcas «No usar»",
+                any ? Ui.Style.NORMAL : Ui.Style.GHOST) && any) {
+            c.noWiki.clear();
+            save();
+            com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
+            breederCount = -1;
+            PanelState.status("Ya no hay Pokémon marcados «No usar».", Ui.TEXT_DIM);
+        }
+        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, "Para marcar uno: botón de parejas (love ball),", "ficha «No usar» y click en el Pokémon.");
+        r += 22;
+        if (ui.button(lx, r, iw, 18, "Descargar .txt de breeders", Ui.Style.PRIMARY)) {
+            try {
+                int n = com.diosesmon.organizerpc.cobblemon.BreederExport.write(p.pc());
+                com.diosesmon.organizerpc.cobblemon.BreederExport.openFolder();
+                PanelState.status("breeders.txt listo (" + n + " Pokémon). Súbelo en la wiki: Crianza → Importar.", Ui.GREEN);
+            } catch (Exception e) {
+                PanelState.status("No se pudo guardar breeders.txt: " + e.getMessage(), Ui.BAD);
+            }
+        }
+        ui.tooltip(lx, r, iw, 18, "Guarda organizerpc/breeders.txt en la carpeta", "del juego y la abre. En la wiki: Crianza → Importar.");
+        r += 24;
+        r = breedBoxes(p, ui, lx, r, iw);
+        boolean viewer = com.diosesmon.organizerpc.cobblemon.BreederExport.viewerPresent();
+        ui.wrapped(lx, r, iw, viewer
+                ? "Tienes WikiDiosesmonViewer: la wiki del juego recibe tus breeders sola cada vez que abres la PC."
+                : "Sin WikiDiosesmonViewer solo funciona el .txt. Con ese mod, la wiki del juego los recibe sola.",
+                viewer ? Ui.GREEN : Ui.TEXT_DIM);
+    }
+
+    /** Las 2 cajas de crianza (− / + para cambiarlas, × para quitar) y el botón que lleva ahí las parejas de la wiki. */
+    private static int breedBoxes(OrganizerPanel p, Ui ui, int lx, int r, int iw) {
+        OrganizerConfig c = p.cfg();
+        ui.small(lx, r + 5, "Cajas de crianza", Ui.TEXT_DIM);
+        int x0 = lx + 74, cw = (lx + iw - x0 - 4) / 2;
+        for (int i = 0; i < 2; i++) {
+            int bx = x0 + i * (cw + 4);
+            if (i < c.breedBoxes.size()) {
+                int box = c.breedBoxes.get(i);
+                ui.box(bx, r, cw, 16, Ui.BTN, Ui.BORDER);
+                ui.text(bx + 4, r + 4, "Caja " + (box + 1), Ui.TEXT);
+                int px = bx + cw - 45;
+                if (ui.button(px, r, 14, 16, "−", Ui.Style.NORMAL)) moveBreedBox(p, i, -1);
+                if (ui.button(px + 15, r, 14, 16, "+", Ui.Style.NORMAL)) moveBreedBox(p, i, 1);
+                if (ui.button(px + 30, r, 14, 16, "×", Ui.Style.DANGER)) {
+                    c.breedBoxes.remove(i);
+                    save();
+                    return r + 22;
+                }
+                ui.tooltip(bx, r, cw - 46, 16, "Aquí van las parejas que elige la wiki.", "Organizar y ordenar no tocan esta caja.");
+            } else {
+                if (ui.button(bx, r, cw, 16, "+ Elegir caja", Ui.Style.NORMAL)) {
+                    int box = p.currentBox();
+                    while (c.breedBoxes.contains(box) || c.lockedBoxes.contains(box)) box = (box + 1) % Math.max(1, p.boxCount());
+                    c.breedBoxes.add(box);
+                    save();
+                }
+                ui.tooltip(bx, r, cw, 16, "Empieza con la caja abierta; cámbiala con − y +.");
+                break;
+            }
+        }
+        r += 21;
+        var wp = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs();
+        int n = wp.orderedMembers().size();
+        boolean can = !c.breedBoxes.isEmpty() && n > 0;
+        if (ui.button(lx, r, iw, 18, n > 0 ? "Mover las parejas de la wiki a las cajas (" + n + ")" : "La wiki todavía no eligió parejas",
+                can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) {
+            p.startBreedMove();
+        }
+        ui.tooltip(lx, r, iw, 18, "Las pone juntas: P1 macho, P1 hembra, P2…", "Antes ves la vista previa y confirmas.");
+        return r + 24;
+    }
+
+    private static void moveBreedBox(OrganizerPanel p, int i, int d) {
+        OrganizerConfig c = p.cfg();
+        int n = Math.max(1, p.boxCount()), box = c.breedBoxes.get(i);
+        for (int k = 0; k < n; k++) {
+            box = Math.floorMod(box + d, n);
+            if (!c.breedBoxes.contains(box) && !c.lockedBoxes.contains(box)) {
+                c.breedBoxes.set(i, box);
+                save();
+                return;
+            }
+        }
     }
 
     private static void sizes(OrganizerPanel p, Ui ui, int lx, int r, int iw) {

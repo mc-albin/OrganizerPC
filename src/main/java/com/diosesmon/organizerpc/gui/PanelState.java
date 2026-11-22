@@ -15,7 +15,7 @@ final class PanelState {
     /** Qué hace un click en la barra de cajas. */
     enum StripMode { NAVIGATE, ASSIGN, LOCK, CAPTURE, ARRANGE }
 
-    enum PreviewKind { ORGANIZE_ALL, ORGANIZE_BOX, ORGANIZE_CAPTURE, MOVE, ARRANGE }
+    enum PreviewKind { ORGANIZE_ALL, ORGANIZE_BOX, ORGANIZE_CAPTURE, MOVE, ARRANGE, BREED }
 
     /** Ventanas flotantes (arrastrables). */
     enum Win { SETTINGS, ARRANGE }

@@ -202,6 +202,7 @@ public final class OrganizerPanel {
     void refreshSnapshot() {
         try {
             snapshot = PcReader.read(pc());
+            com.diosesmon.organizerpc.cobblemon.BreederExport.autoSync(pc());
         } catch (Exception e) {
             snapshot = null;
             PanelState.status(e.getMessage(), Ui.BAD);
@@ -232,6 +233,7 @@ public final class OrganizerPanel {
     void tick() {
         if (PanelState.statusTicks > 0 && --PanelState.statusTicks == 0) PanelState.status = "";
         if (++ticks % 10 != 0) return;
+        if (com.diosesmon.organizerpc.cobblemon.BreederExport.consumeDirty()) com.diosesmon.organizerpc.cobblemon.BreederExport.autoSync(pc());
         long sig = computeSignature();
         if (sig == signature) return;
         signature = sig;
@@ -774,7 +776,7 @@ public final class OrganizerPanel {
             case ORGANIZE_CAPTURE -> new TreeSet<>(c.captureBoxes);
             default -> allBoxes();
         };
-        return Planner.organize(new Planner.Request(snapshot, c.categories, scope, c.lockedBoxes,
+        return Planner.organize(new Planner.Request(snapshot, c.categories, scope, c.lockedOrBreed(),
                 c.unsortedMode, c.unsortedBox, PanelState.overrides, c.evictStrays, c.captureBoxes, c.compact,
                 c.captureSort, c.captureSort2));
     }
@@ -782,7 +784,7 @@ public final class OrganizerPanel {
     Plan computeArrangePlan() {
         refreshSnapshot();
         if (snapshot == null) return null;
-        return Planner.arrange(snapshot, PanelState.arrangeBoxes, PanelState.arrangeMode, PanelState.arrangeMode2, cfg().lockedBoxes,
+        return Planner.arrange(snapshot, PanelState.arrangeBoxes, PanelState.arrangeMode, PanelState.arrangeMode2, cfg().lockedOrBreed(),
                 cfg().captureBoxes);
     }
 
@@ -798,7 +800,37 @@ public final class OrganizerPanel {
                 cfg().captureBoxes);
     }
 
+    /** Parejas de la wiki a las cajas de crianza, en orden: crianza por crianza, P1 macho, P1 hembra, P2… */
+    Plan computeBreedPlan() {
+        refreshSnapshot();
+        if (snapshot == null) return null;
+        return Planner.placeExact(snapshot, com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().orderedMembers(),
+                cfg().breedBoxes, cfg().lockedBoxes);
+    }
+
+    /** «Mover a las cajas de crianza»: vista previa y confirmación, como el resto. */
+    void startBreedMove() {
+        if (cfg().breedBoxes.isEmpty()) {
+            PanelState.status("Elige tus cajas de crianza en Ajustes → Crianza.", Ui.GOLD);
+            return;
+        }
+        if (com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().isEmpty()) {
+            PanelState.status("La wiki todavía no eligió parejas.", Ui.GOLD);
+            return;
+        }
+        Plan plan = computeBreedPlan();
+        if (plan == null) return;
+        if (plan.isEmpty()) {
+            PanelState.status(plan.noSpace().isEmpty() ? "Las parejas ya están en sus cajas de crianza." : "No caben más parejas en tus cajas de crianza.", Ui.GREEN);
+            return;
+        }
+        PanelState.settingsOpen = false;
+        openPreview(plan, PanelState.PreviewKind.BREED, cfg().breedBoxes.get(0));
+        if (!plan.noSpace().isEmpty()) PanelState.status(plan.noSpace().size() + " no caben en las 2 cajas de crianza.", Ui.GOLD);
+    }
+
     Plan recomputePreview() {
+        if (PanelState.previewKind == PanelState.PreviewKind.BREED) return computeBreedPlan();
         if (PanelState.previewKind == PanelState.PreviewKind.MOVE) return computeMovePlan(PanelState.previewTargets);
         if (PanelState.previewKind == PanelState.PreviewKind.ARRANGE) return computeArrangePlan();
         return computeOrganizePlan(PanelState.previewKind, PanelState.previewBox);
@@ -809,7 +841,7 @@ public final class OrganizerPanel {
         OrganizerConfig c = cfg();
         int usable = 0;
         String noBoxes = null;
-        Set<Integer> blocked = new TreeSet<>(c.lockedBoxes);
+        Set<Integer> blocked = new TreeSet<>(c.lockedOrBreed());
         blocked.addAll(c.captureBoxes);
         for (Category cat : c.categories) {
             if (!cat.enabled || cat.activeConditions().isEmpty()) continue;
@@ -880,7 +912,8 @@ public final class OrganizerPanel {
         PanelState.stripMode = PanelState.StripMode.NAVIGATE;
         PanelState.scroll.put("pv_in", 0);
         PanelState.scroll.put("pv_out", 0);
-        if (kind == PanelState.PreviewKind.MOVE || kind == PanelState.PreviewKind.ORGANIZE_BOX || kind == PanelState.PreviewKind.ARRANGE) {
+        if (kind == PanelState.PreviewKind.MOVE || kind == PanelState.PreviewKind.ORGANIZE_BOX || kind == PanelState.PreviewKind.ARRANGE
+                || kind == PanelState.PreviewKind.BREED) {
             goToBox(box);
             return;
         }

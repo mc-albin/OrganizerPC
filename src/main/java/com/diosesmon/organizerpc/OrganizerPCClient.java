@@ -46,6 +46,8 @@ public final class OrganizerPCClient implements ClientModInitializer {
             if (screen instanceof PCGUI gui) PcScreenHook.attach(gui);
         });
         ClientTickEvents.END_CLIENT_TICK.register(MoveExecutor::tick);
+        // Wiki de crianza (con WikiDiosesmonViewer): parejas que eligió la página y equipo vigilado.
+        ClientTickEvents.END_CLIENT_TICK.register(com.diosesmon.organizerpc.cobblemon.WikiSync::tick);
         AfkTracker.register();
         net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(com.diosesmon.organizerpc.gui.Pairs.KEY);
         // Living dex: familia evolutiva en orden de Pokédex (de los JSON de especies de Cobblemon).

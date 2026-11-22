@@ -117,6 +117,13 @@ public final class ConfigStore {
             pairs.add(po);
         }
         o.add("pairs", pairs);
+        JsonArray noWiki = new JsonArray();
+        for (java.util.UUID u : cfg.noWiki) noWiki.add(u.toString());
+        o.add("noWiki", noWiki);
+        o.addProperty("breedDitto", cfg.breedDitto);
+        JsonArray breedBoxes = new JsonArray();
+        for (int b : cfg.breedBoxes) breedBoxes.add(b);
+        o.add("breedBoxes", breedBoxes);
         JsonArray cats = new JsonArray();
         for (Category c : cfg.categories) cats.add(encode(c));
         o.add("categories", cats);
@@ -201,6 +208,26 @@ public final class ConfigStore {
                     cfg.pairs.add(bp);
                 } catch (Exception ignored) {
                     // Pareja ilegible: se ignora.
+                }
+            }
+        }
+        if (o.has("noWiki")) {
+            for (JsonElement e : o.getAsJsonArray("noWiki")) {
+                try {
+                    cfg.noWiki.add(java.util.UUID.fromString(e.getAsString()));
+                } catch (Exception ignored) {
+                    // UUID ilegible: se ignora.
+                }
+            }
+        }
+        cfg.breedDitto = o.has("breedDitto") && o.get("breedDitto").getAsBoolean();
+        if (o.has("breedBoxes")) {
+            for (JsonElement e : o.getAsJsonArray("breedBoxes")) {
+                try {
+                    int b = e.getAsInt();
+                    if (b >= 0 && !cfg.breedBoxes.contains(b) && cfg.breedBoxes.size() < 2) cfg.breedBoxes.add(b);
+                } catch (Exception ignored) {
+                    // Caja ilegible: se ignora.
                 }
             }
         }

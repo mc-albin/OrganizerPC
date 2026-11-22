@@ -28,6 +28,11 @@ public final class Pairs {
     public static final KeyBinding KEY = new KeyBinding("Marcar pareja de crianza (OrganizerPC)",
             InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_P, "OrganizerPC");
 
+    /** Valor de {@link PanelState#selectedPair} para la ficha «No usar» (marca Pokémon para que la wiki no los use). */
+    static final int NO_WIKI = -1;
+    /** Color de la marca «No usar». */
+    static final int NO_WIKI_COLOR = 0xFF9AA0A6;
+
     private Pairs() {
     }
 
@@ -66,6 +71,18 @@ public final class Pairs {
 
     /** Mete o saca al Pokémon de la pareja elegida. Si estaba en otra, se cambia a esta. */
     static void toggle(UUID u, String name) {
+        if (PanelState.selectedPair == NO_WIKI) {
+            if (cfg().noWiki.remove(u)) {
+                PanelState.status(name + ": la wiki ya puede usarlo.", Ui.TEXT_DIM);
+            } else {
+                cfg().noWiki.add(u);
+                PanelState.status(name + ": no se usará en la wiki.", NO_WIKI_COLOR);
+            }
+            Ui.click();
+            OrganizerPCClient.saveConfig();
+            com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
+            return;
+        }
         BreedingPair target = selected();
         BreedingPair cur = cfg().pairOf(u);
         if (cur == target) {
@@ -81,6 +98,7 @@ public final class Pairs {
         }
         Ui.click();
         OrganizerPCClient.saveConfig();
+        com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
     }
 
     /** Dónde está un miembro: caja de la PC, equipo o ninguno de los dos (guardería, pasto…). */
@@ -115,6 +133,10 @@ public final class Pairs {
                 if (pos != null && pos.box() == box) return bp.color;
             }
         }
+        for (UUID u : com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().orderedMembers()) {
+            Pos pos = p.snapshot.positionOf(u);
+            if (pos != null && pos.box() == box) return com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().markOf(u).color();
+        }
         return 0;
     }
 
@@ -127,21 +149,32 @@ public final class Pairs {
                 if (pos != null && pos.box() == box) out.add("Pareja " + bp.label() + ": " + name(p, u));
             }
         }
+        var wp = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs();
+        for (UUID u : wp.orderedMembers()) {
+            Pos pos = p.snapshot.positionOf(u);
+            if (pos == null || pos.box() != box) continue;
+            var m = wp.markOf(u);
+            out.add(m.crianza() + " " + (m.pair() > 0 ? "P" + m.pair() : "(reservado)") + ": " + name(p, u));
+        }
         return out;
     }
 
     /** Insignia «P1» arriba a la izquierda del hueco y borde del color de la pareja. */
     static void badge(DrawContext ctx, int x, int y, BreedingPair bp) {
+        badge(ctx, x, y, bp.label(), bp.color);
+    }
+
+    /** Insignia con texto y color (parejas manuales «P1» y de la wiki «L2»). */
+    static void badge(DrawContext ctx, int x, int y, String t, int color) {
         int size = StorageSlot.SIZE;
         Ui ui = new Ui(Ui.Mode.DRAW, ctx, -1, -1);
-        ui.roundBorder(x, y, size, size, bp.color);
-        ui.roundBorder(x + 1, y + 1, size - 2, size - 2, Ui.alpha(bp.color, 0x70));
+        ui.roundBorder(x, y, size, size, color);
+        ui.roundBorder(x + 1, y + 1, size - 2, size - 2, Ui.alpha(color, 0x70));
         var tr = MinecraftClient.getInstance().textRenderer;
-        String t = bp.label();
         double gs = MinecraftClient.getInstance().getWindow().getScaleFactor();
         float sc = (float) (Math.max(1, Math.round(0.5 * gs)) / gs);
         int w = (int) Math.ceil(tr.getWidth(t) * sc) + 3, h = (int) Math.ceil(8 * sc) + 2;
-        ctx.fill(x + 1, y + 1, x + 1 + w, y + 1 + h, bp.color);
+        ctx.fill(x + 1, y + 1, x + 1 + w, y + 1 + h, color);
         ctx.getMatrices().push();
         ctx.getMatrices().translate(x + 2.5F, y + 2, 0);
         ctx.getMatrices().scale(sc, sc, 1F);
@@ -149,21 +182,43 @@ public final class Pairs {
         ctx.getMatrices().pop();
     }
 
+    /** Marca «No usar en la wiki»: «No» gris abajo a la izquierda del hueco. */
+    static void noWikiBadge(DrawContext ctx, int x, int y) {
+        int size = StorageSlot.SIZE;
+        var tr = MinecraftClient.getInstance().textRenderer;
+        String t = "No";
+        double gs = MinecraftClient.getInstance().getWindow().getScaleFactor();
+        float sc = (float) (Math.max(1, Math.round(0.5 * gs)) / gs);
+        int w = (int) Math.ceil(tr.getWidth(t) * sc) + 3, h = (int) Math.ceil(8 * sc) + 2;
+        int by = y + size - 1 - h;
+        ctx.fill(x + 1, by, x + 1 + w, by + h, NO_WIKI_COLOR);
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(x + 2.5F, by + 1, 0);
+        ctx.getMatrices().scale(sc, sc, 1F);
+        ctx.drawText(tr, t, 0, 0, 0xFF101215, false);
+        ctx.getMatrices().pop();
+    }
+
+    private static void marks(DrawContext ctx, StorageSlot slot) {
+        Pokemon mon = slot.getPokemon();
+        if (mon == null) return;
+        BreedingPair bp = cfg().pairOf(mon.getUuid());
+        if (bp != null) {
+            badge(ctx, slot.getX(), slot.getY(), bp);
+        } else {
+            var wm = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().markOf(mon.getUuid());
+            if (wm != null) badge(ctx, slot.getX(), slot.getY(), wm.label(), wm.color());
+        }
+        if (cfg().noWiki.contains(mon.getUuid())) noWikiBadge(ctx, slot.getX(), slot.getY());
+    }
+
     /** Insignias sobre los Pokémon de la caja abierta y del equipo de la PC (coordenadas reales). */
     static void renderSlots(OrganizerPanel p, DrawContext ctx) {
-        if (cfg().pairs.isEmpty()) return;
+        if (cfg().pairs.isEmpty() && cfg().noWiki.isEmpty() && com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().isEmpty()) return;
         ctx.getMatrices().push();
         ctx.getMatrices().translate(0, 0, 420);
-        for (var slot : p.boxSlots()) {
-            Pokemon mon = slot.getPokemon();
-            BreedingPair bp = mon == null ? null : cfg().pairOf(mon.getUuid());
-            if (bp != null) badge(ctx, slot.getX(), slot.getY(), bp);
-        }
-        for (var slot : p.partySlots()) {
-            Pokemon mon = slot.getPokemon();
-            BreedingPair bp = mon == null ? null : cfg().pairOf(mon.getUuid());
-            if (bp != null) badge(ctx, slot.getX(), slot.getY(), bp);
-        }
+        for (var slot : p.boxSlots()) marks(ctx, slot);
+        for (var slot : p.partySlots()) marks(ctx, slot);
         ctx.getMatrices().pop();
     }
 
@@ -196,7 +251,20 @@ public final class Pairs {
         ui.icon(Icons.PAIR, x, y + 3, 12);
         int cx = x + 16;
         int right = x + w - 60 - 4 - 40 - 4 - 46 - 4;
-        BreedingPair sel = selected();
+        boolean noMode = PanelState.selectedPair == NO_WIKI;
+        BreedingPair sel = noMode ? null : selected();
+        {
+            String nl = "No usar";
+            int cw = ui.width(nl) + 8;
+            boolean hov = ui.hover(cx, y, cw, H);
+            ui.box(cx, y, cw, H, noMode ? Ui.mix(Ui.BTN, NO_WIKI_COLOR, 0.45F) : hov ? Ui.BTN_HOVER : Ui.BTN,
+                    noMode ? NO_WIKI_COLOR : hov ? Ui.BORDER_HOVER : Ui.BORDER);
+            ui.text(cx + 4, y + 5, nl, noMode ? Ui.TEXT_ON : NO_WIKI_COLOR);
+            ui.tooltip(cx, y, cw, H, "No usar en la wiki", "Click aquí y luego en un Pokémon: la wiki", "de crianza no lo usará como breeder.",
+                    "Llevan " + cfg().noWiki.size() + " marcados.");
+            if (ui.area(cx, y, cw, H)) PanelState.selectedPair = noMode ? (cfg().pairs.isEmpty() ? 0 : cfg().pairs.get(0).number) : NO_WIKI;
+            cx += cw + 6;
+        }
         for (BreedingPair bp : new ArrayList<>(cfg().pairs)) {
             int cw = ui.width(bp.label()) + 22;
             if (cx + cw > right - 22) break;
@@ -228,6 +296,7 @@ public final class Pairs {
 
         int bx = x + w - 60;
         if (ui.button(bx, y, 60, H, "Listo", Ui.Style.PRIMARY)) PanelState.pairMode = false;
+        if (sel == null) return;
         bx -= 44;
         if (ui.button(bx, y, 40, H, "Ir", Ui.Style.NORMAL)) goTo(p, sel);
         ui.tooltip(bx, y, 40, H, "Ir a la caja de " + sel.label() + ".");

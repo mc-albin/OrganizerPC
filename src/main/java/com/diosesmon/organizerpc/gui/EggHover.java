@@ -25,12 +25,14 @@ final class EggHover {
 
     /** {@code rmx}/{@code rmy}: ratón real. Se dibuja con la escala del organizador (ya aplicada). */
     static void render(OrganizerPanel p, DrawContext ctx, int rmx, int rmy) {
-        if (!OrganizerPCClient.config().eggGroupHover) return;
         BoxStorageSlot slot = p.slotAt(rmx, rmy);
         int mx = p.vx(rmx), my = p.vy(rmy);
         if (slot == null) return;
         Pokemon mon = slot.getPokemon();
         if (mon == null) return;
+        var wm = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().markOf(mon.getUuid());
+        boolean eggs = OrganizerPCClient.config().eggGroupHover;
+        if (!eggs && wm == null) return;
         if (!mon.getUuid().equals(cachedUuid)) {
             cachedUuid = mon.getUuid();
             try {
@@ -42,13 +44,24 @@ final class EggHover {
 
         Ui ui = new Ui(Ui.Mode.DRAW, ctx, mx, my);
         List<String> names = new ArrayList<>();
-        for (EggGroupKey g : cachedGroups) names.add(g.label);
-        if (names.isEmpty()) names.add("Desconocido");
-        String title = "Grupo huevo";
+        if (eggs) {
+            for (EggGroupKey g : cachedGroups) names.add(g.label);
+            if (names.isEmpty()) names.add("Desconocido");
+        }
+        // Crianza de la wiki: a qué crianza y pareja va, qué paso y si cambia de género.
+        List<String> wiki = new ArrayList<>();
+        if (wm != null) {
+            wiki.add(wm.crianza() + " · " + (wm.pair() > 0 ? "Pareja " + wm.pair() : "Reservado"));
+            if (!wm.step().isBlank()) wiki.add("Paso: " + wm.step());
+            if (wm.pair() > 0) wiki.add("Va como " + (wm.female() ? "hembra" : "macho") + (wm.genderChange() ? " (cambio de género)" : ""));
+            if (!wm.state().isBlank() && !wm.state().equals("lista") && !wm.state().equals("reservado")) wiki.add("Estado: " + wm.state());
+        }
+        String title = eggs ? "Grupo huevo" : "Crianza";
         int w = ui.smallWidth(title);
         for (String n : names) w = Math.max(w, ui.width(n) + 10);
+        for (String n : wiki) w = Math.max(w, ui.width(n) + 10);
         w += 10;
-        int h = 4 + 8 + names.size() * 10 + 3;
+        int h = 4 + 8 + names.size() * 10 + (wiki.isEmpty() ? 0 : wiki.size() * 10 + (eggs ? 4 : 0)) + 3;
 
         int x = mx + 10, y = my - h - 4;
         int sw = p.vw, sh = p.vh;
@@ -64,6 +77,12 @@ final class EggHover {
         for (String n : names) {
             ui.round(x + 5, ty + 2, 4, 4, Ui.GOLD);
             ui.text(x + 12, ty, n, Ui.TEXT);
+            ty += 10;
+        }
+        if (!wiki.isEmpty() && eggs) ty += 4;
+        for (int i = 0; i < wiki.size(); i++) {
+            ui.round(x + 5, ty + 2, 4, 4, wm.color());
+            ui.text(x + 12, ty, wiki.get(i), i == 0 ? wm.color() : Ui.TEXT);
             ty += 10;
         }
         ctx.getMatrices().pop();

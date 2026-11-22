@@ -186,6 +186,7 @@ final class SidePanel {
             case ORGANIZE_CAPTURE -> "Repartir las cajas de captura";
             case ORGANIZE_ALL -> "Organizar toda la PC";
             case ARRANGE -> "Ordenar " + PanelState.arrangeBoxes.size() + " cajas";
+            case BREED -> "Parejas a las cajas de crianza";
         };
         ui.small(lx, cy, what + " · " + plan.movedCount() + " cambian", Ui.TEXT_DIM);
         cy += 9;
