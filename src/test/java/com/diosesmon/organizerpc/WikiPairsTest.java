@@ -30,6 +30,16 @@ class WikiPairsTest {
     }
 
     @Test
+    void optionsAreMarkedButNotMoved() {
+        UUID o = UUID.fromString("00000000-0000-0000-0000-00000000000d");
+        WikiPairs w = WikiPairs.parse("{\"crianzas\":[{\"id\":\"a\",\"nombre\":\"Clefairy\",\"pares\":[],\"opciones\":[{\"u\":\"" + o + "\",\"paso\":\"31 PS\"}]}]}");
+        assertEquals("C?", w.markOf(o).label());
+        assertTrue(w.markOf(o).option());
+        assertEquals(WikiPairs.OPTION_COLOR, w.markOf(o).color());
+        assertTrue(w.orderedMembers().isEmpty());
+    }
+
+    @Test
     void emptyAndBrokenIdsAreIgnored() {
         assertTrue(WikiPairs.parse("").isEmpty());
         WikiPairs w = WikiPairs.parse("{\"crianzas\":[{\"pares\":[{\"a\":\"no-es-uuid\",\"b\":\"\"}]}]}");

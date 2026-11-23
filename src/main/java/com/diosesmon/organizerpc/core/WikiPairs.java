@@ -32,10 +32,15 @@ public final class WikiPairs {
      */
     public record Mark(String crianzaId, String crianza, int color, int pair, boolean female, String brazal, String state,
                        boolean genderChange, UUID partner, boolean genderless) {
-        /** Texto corto de la insignia: inicial de la crianza y número de pareja («C1»), o «C·» si está reservado. */
+        /** Texto corto de la insignia: «C1» pareja, «C·» reservado, «C?» opción que tú decides en la wiki. */
         public String label() {
             String ini = crianza == null || crianza.isBlank() ? "C" : crianza.substring(0, 1).toUpperCase(Locale.ROOT);
-            return ini + (pair > 0 ? String.valueOf(pair) : "·");
+            return ini + (pair > 0 ? String.valueOf(pair) : option() ? "?" : "·");
+        }
+
+        /** Opción: un Pokémon con más IV que podría reemplazar un paso; la wiki no lo usa salvo que tú lo elijas. */
+        public boolean option() {
+            return "opcion".equals(state);
         }
 
         /** Estado con palabras. */
@@ -46,6 +51,7 @@ public final class WikiPairs {
                 case "incompleta" -> "Falta su pareja";
                 case "evolucionar" -> "Evoluciona la cría";
                 case "reservado" -> "Espera una cría";
+                case "opcion" -> "Opción: tú decides en la wiki";
                 default -> state == null ? "" : state;
             };
         }
@@ -56,6 +62,8 @@ public final class WikiPairs {
     }
 
     public static final WikiPairs EMPTY = new WikiPairs(Map.of(), List.of());
+    /** Ámbar de las opciones (distinto del dorado de la 3.ª crianza). */
+    public static final int OPTION_COLOR = 0xFFFF9F1C;
 
     private final Map<UUID, Mark> marks;
     private final List<Crianza> crianzas;
@@ -152,6 +160,12 @@ public final class WikiPairs {
                 if (u == null) continue;
                 reserved.add(u);
                 marks.putIfAbsent(u, new Mark(id, name, color, 0, "F".equals(str(r, "g", "M")), str(r, "br", ""), "reservado", false, null, false));
+            }
+            // Opciones: no van a las cajas de crianza; en brazal se guarda el paso que podría reemplazar
+            if (c.has("opciones")) for (JsonElement oe : c.getAsJsonArray("opciones")) {
+                JsonObject o = oe.getAsJsonObject();
+                UUID u = uuid(str(o, "u", ""));
+                if (u != null) marks.putIfAbsent(u, new Mark(id, name, OPTION_COLOR, -1, false, str(o, "paso", ""), "opcion", false, null, false));
             }
             list.add(new Crianza(id, name, color, Collections.unmodifiableList(pairs), Collections.unmodifiableList(reserved)));
         }

@@ -52,12 +52,18 @@ final class EggHover {
         List<String> wiki = new ArrayList<>();
         if (wm != null) {
             // Lo que hay que hacer: con quién se cría, qué sexo ponerle y qué IV pasa con su brazal (31 o 0)
+            if (wm.option()) {
+                wiki.add(wm.crianza() + " · opción");
+                if (!wm.brazal().isBlank()) wiki.add("Puede reemplazar el paso " + wm.brazal());
+                wiki.add("Úsalo en la wiki: Parejas → Opciones");
+            } else {
             wiki.add(wm.crianza() + " · " + (wm.pair() > 0 ? wm.label() : "espera una cría"));
             if (wm.partner() != null) wiki.add("Cría con: " + Pairs.name(p, wm.partner()));
             // Macho con hembra siempre: solo a un sin sexo hay que ponerle el sexo
             wiki.add(wm.genderless() ? "Sin sexo: ponle " + (wm.female() ? "hembra" : "macho · se paga") : "Va como " + (wm.female() ? "hembra" : "macho"));
             if (!wm.brazal().isBlank()) wiki.add("Brazal: pasa " + wm.brazal());
             if (wm.pair() > 0) wiki.add("Estado: " + wm.stateLabel());
+            }
         }
         String title = eggs ? "Grupo huevo" : "Crianza";
         int w = ui.smallWidth(title);

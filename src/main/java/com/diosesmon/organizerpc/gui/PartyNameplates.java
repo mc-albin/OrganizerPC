@@ -87,7 +87,7 @@ public final class PartyNameplates {
             }
             if (mine == null) return;
             var mark = wiki.markOf(mine.getUuid());
-            if (mark == null || mark.brazal().isBlank()) return;
+            if (mark == null || mark.option() || mark.brazal().isBlank()) return;   // las opciones no llevan brazal
             String stat = mark.brazal().substring(mark.brazal().indexOf(' ') + 1).trim();
             String id = BRAZALES.get(stat);
             if (id == null) return;
