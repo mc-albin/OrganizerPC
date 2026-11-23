@@ -154,7 +154,7 @@ public final class Pairs {
             Pos pos = p.snapshot.positionOf(u);
             if (pos == null || pos.box() != box) continue;
             var m = wp.markOf(u);
-            out.add(m.crianza() + " " + (m.pair() > 0 ? "P" + m.pair() : "(reservado)") + ": " + name(p, u));
+            out.add(m.crianza() + " " + (m.pair() > 0 ? m.label() : "(espera una cría)") + ": " + name(p, u) + (m.female() ? " ♀" : " ♂"));
         }
         return out;
     }
@@ -207,7 +207,8 @@ public final class Pairs {
             badge(ctx, slot.getX(), slot.getY(), bp);
         } else {
             var wm = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().markOf(mon.getUuid());
-            if (wm != null) badge(ctx, slot.getX(), slot.getY(), wm.label(), wm.color());
+            // «C1♂»: crianza, número de pareja y el sexo que debe tener
+            if (wm != null) badge(ctx, slot.getX(), slot.getY(), wm.label() + (wm.female() ? "♀" : "♂"), wm.color());
         }
         if (cfg().noWiki.contains(mon.getUuid())) noWikiBadge(ctx, slot.getX(), slot.getY());
     }

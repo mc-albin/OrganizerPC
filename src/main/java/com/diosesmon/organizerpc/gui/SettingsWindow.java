@@ -320,7 +320,7 @@ final class SettingsWindow {
                 can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) {
             p.startBreedMove();
         }
-        ui.tooltip(lx, r, iw, 18, "Las pone juntas: P1 macho, P1 hembra, P2…", "Antes ves la vista previa y confirmas.");
+        ui.tooltip(lx, r, iw, 18, "Una pareja por fila, en orden: C1, C2, C3…", "Antes ves la vista previa y confirmas.");
         return r + 24;
     }
 

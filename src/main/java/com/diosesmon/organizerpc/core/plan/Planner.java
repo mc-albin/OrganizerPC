@@ -410,21 +410,68 @@ public final class Planner {
      * Se saltan los que no están en la PC (equipo, criando) o están en cajas bloqueadas; los que no caben van a noSpace.
      */
     public static Plan placeExact(PcModel original, List<UUID> ordered, List<Integer> boxes, Set<Integer> locked) {
+        List<Integer> targets = new ArrayList<>();
+        for (int b : boxes) if (b >= 0 && b < original.boxCount() && !locked.contains(b) && !targets.contains(b)) targets.add(b);
+        List<UUID> members = new ArrayList<>();
+        List<Pos> pos = new ArrayList<>();
+        int i = 0;
+        for (UUID u : ordered) {
+            if (members.contains(u) || original.positionOf(u) == null) continue;   // los que no están en la PC no ocupan lugar
+            members.add(u);
+            pos.add(i < targets.size() * PcModel.SLOTS_PER_BOX ? new Pos(targets.get(i / PcModel.SLOTS_PER_BOX), i % PcModel.SLOTS_PER_BOX) : null);
+            i++;
+        }
+        return placeAt(original, members, pos, locked);
+    }
+
+    /**
+     * Cajas de crianza por parejas: cada pareja en una fila (macho en la columna 1, hembra en la 2), de arriba abajo;
+     * con 5 filas llenas sigue en las columnas 3-4 y después en la 5-6. Así quedan en orden: C1, C2, C3…
+     * Cada pareja tiene 2 lugares (un lugar puede ser null). Las que no caben en las cajas van a noSpace.
+     */
+    public static Plan placePairs(PcModel original, List<List<UUID>> pairs, List<Integer> boxes, Set<Integer> locked) {
+        List<Integer> targets = new ArrayList<>();
+        for (int b : boxes) if (b >= 0 && b < original.boxCount() && !locked.contains(b) && !targets.contains(b)) targets.add(b);
+        int perBox = PcModel.SLOTS_PER_BOX / 2, rows = PcModel.SLOTS_PER_BOX / 6;
+        List<UUID> members = new ArrayList<>();
+        List<Pos> pos = new ArrayList<>();
+        for (int k = 0; k < pairs.size(); k++) {
+            for (int side = 0; side < 2; side++) {
+                UUID u = side < pairs.get(k).size() ? pairs.get(k).get(side) : null;
+                if (u == null || members.contains(u)) continue;
+                members.add(u);
+                if (k >= targets.size() * perBox) {
+                    pos.add(null);
+                    continue;
+                }
+                int box = targets.get(k / perBox), j = k % perBox, block = j / rows, row = j % rows;
+                pos.add(new Pos(box, row * 6 + block * 2 + side));
+            }
+        }
+        return placeAt(original, members, pos, locked);
+    }
+
+    /** Lleva cada Pokémon a su lugar ({@code pos} null = no cabe). Se saltan los que no están en la PC o están en cajas bloqueadas. */
+    public static Plan placeAt(PcModel original, List<UUID> ordered, List<Pos> targetsByMember, Set<Integer> locked) {
         PcModel m = original.copy();
         List<Operation> ops = new ArrayList<>();
-        List<Integer> targets = new ArrayList<>();
-        for (int b : boxes) if (b >= 0 && b < m.boxCount() && !locked.contains(b) && !targets.contains(b)) targets.add(b);
         List<UUID> members = new ArrayList<>();
-        for (UUID u : ordered) {
-            Pos at = m.positionOf(u);
-            if (at != null && !locked.contains(at.box()) && !members.contains(u)) members.add(u);
-        }
-        int cap = targets.size() * PcModel.SLOTS_PER_BOX;
-        List<PokemonInfo> noSpace = new ArrayList<>();
-        for (int i = cap; i < members.size(); i++) noSpace.add(m.info(members.get(i)));
-        List<UUID> fit = members.subList(0, Math.min(cap, members.size()));
+        List<UUID> fit = new ArrayList<>();
         List<Pos> pos = new ArrayList<>();
-        for (int i = 0; i < fit.size(); i++) pos.add(new Pos(targets.get(i / PcModel.SLOTS_PER_BOX), i % PcModel.SLOTS_PER_BOX));
+        List<PokemonInfo> noSpace = new ArrayList<>();
+        for (int i = 0; i < ordered.size(); i++) {
+            UUID u = ordered.get(i);
+            Pos at = m.positionOf(u);
+            if (at == null || locked.contains(at.box())) continue;
+            members.add(u);
+            Pos to = targetsByMember.get(i);
+            if (to == null || locked.contains(to.box())) {
+                noSpace.add(m.info(u));
+                continue;
+            }
+            fit.add(u);
+            pos.add(to);
+        }
         applyTargets(m, ops, fit, pos);
         List<Plan.Entry> entries = new ArrayList<>();
         for (UUID u : m.allInfos().keySet()) {

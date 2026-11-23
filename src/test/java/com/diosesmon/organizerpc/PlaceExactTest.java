@@ -40,6 +40,22 @@ class PlaceExactTest {
     }
 
     @Test
+    void pairsGoOnePerRowInTwoColumns() {
+        PcModel m = new PcModel(3);
+        java.util.List<java.util.List<UUID>> pairs = new java.util.ArrayList<>();
+        for (int i = 0; i < 7; i++) pairs.add(java.util.Arrays.asList(put(m, 0, i * 2), put(m, 0, i * 2 + 1)));
+        pairs.add(java.util.Arrays.asList(UUID.randomUUID(), put(m, 2, 0)));   // macho que no está en la PC
+        Plan plan = Planner.placePairs(m, pairs, List.of(1), Set.of());
+        PcModel after = plan.after();
+        assertEquals(new Pos(1, 0), after.positionOf(pairs.get(0).get(0)));   // C1: fila 1, columnas 1-2
+        assertEquals(new Pos(1, 1), after.positionOf(pairs.get(0).get(1)));
+        assertEquals(new Pos(1, 6), after.positionOf(pairs.get(1).get(0)));   // C2: fila 2
+        assertEquals(new Pos(1, 24), after.positionOf(pairs.get(4).get(0)));  // C5: fila 5
+        assertEquals(new Pos(1, 2), after.positionOf(pairs.get(5).get(0)));   // C6: fila 1, columnas 3-4
+        assertEquals(new Pos(1, 15), after.positionOf(pairs.get(7).get(1)));  // C8 hembra: fila 3, columna 4
+    }
+
+    @Test
     void missingMembersAreSkipped() {
         PcModel m = new PcModel(2);
         UUID a = put(m, 0, 0);

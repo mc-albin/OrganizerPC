@@ -804,7 +804,7 @@ public final class OrganizerPanel {
     Plan computeBreedPlan() {
         refreshSnapshot();
         if (snapshot == null) return null;
-        return Planner.placeExact(snapshot, com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().orderedMembers(),
+        return Planner.placePairs(snapshot, com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().slotPairs(),
                 cfg().breedBoxes, cfg().lockedBoxes);
     }
 

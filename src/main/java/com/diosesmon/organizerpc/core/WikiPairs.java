@@ -18,22 +18,40 @@ import java.util.UUID;
  * Son aparte de las parejas manuales: el mod solo las señala y, si se lo pides, las lleva a las cajas de crianza.
  *
  * <pre>
- * {"v":1,"crianzas":[{"id":"a","nombre":"Lucario","color":"#FF6FB5",
- *   "pares":[{"n":1,"a":"uuid","b":"uuid","paso":"PS + VEL","estado":"lista","cambio":["uuid"]}],
- *   "reservados":[{"u":"uuid","paso":"ATQ + DEF"}]}]}
+ * {"v":1,"crianzas":[{"id":"a","nombre":"Clefairy","color":"#FF6FB5",
+ *   "pares":[{"n":1,"a":"uuid","b":"uuid","estado":"lista","ga":"M","gb":"F","ca":false,"cb":true,"bra":"31 DEF","brb":"0 ATQ"}],
+ *   "reservados":[{"u":"uuid","g":"M","br":"31 PS"}]}]}
  * </pre>
+ * {@code n}: número de pareja, seguido (1, 2, 3…). {@code ga}/{@code gb}: el sexo que debe tener cada uno; {@code ca}/{@code cb}:
+ * si hay que pagar el cambio; {@code bra}/{@code brb}: el IV que pasa con su brazal (31 o 0).
  */
 public final class WikiPairs {
-    /** Marca de un Pokémon: a qué crianza y pareja pertenece. {@code pair} = 0 si está reservado para un paso posterior. */
-    public record Mark(String crianzaId, String crianza, int color, int pair, boolean female, String step, String state, boolean genderChange) {
-        /** Texto corto de la insignia: inicial de la crianza y número de pareja («L2»), o «L·» si está reservado. */
+    /**
+     * Marca de un Pokémon: crianza, número de pareja (0 = reservado para un paso posterior), el sexo que debe tener,
+     * si hay que cambiárselo pagando, el IV que pasa con su brazal, el estado y con quién se cría.
+     */
+    public record Mark(String crianzaId, String crianza, int color, int pair, boolean female, String brazal, String state,
+                       boolean genderChange, UUID partner) {
+        /** Texto corto de la insignia: inicial de la crianza y número de pareja («C1»), o «C·» si está reservado. */
         public String label() {
             String ini = crianza == null || crianza.isBlank() ? "C" : crianza.substring(0, 1).toUpperCase(Locale.ROOT);
             return ini + (pair > 0 ? String.valueOf(pair) : "·");
         }
+
+        /** Estado con palabras. */
+        public String stateLabel() {
+            return switch (state == null ? "" : state) {
+                case "lista" -> "Lista para criar";
+                case "criando" -> "Criando";
+                case "incompleta" -> "Falta su pareja";
+                case "evolucionar" -> "Evoluciona la cría";
+                case "reservado" -> "Espera una cría";
+                default -> state == null ? "" : state;
+            };
+        }
     }
 
-    /** Una crianza con sus parejas en orden (para mover a las cajas de crianza). */
+    /** Una crianza con sus parejas en orden (para las cajas de crianza): cada pareja, macho y hembra. */
     public record Crianza(String id, String name, int color, List<List<UUID>> pairs, List<UUID> reserved) {
     }
 
@@ -62,9 +80,29 @@ public final class WikiPairs {
     /** Todos los Pokémon de las crianzas en orden: crianza por crianza, P1 macho, P1 hembra, P2…, y al final los reservados. */
     public List<UUID> orderedMembers() {
         List<UUID> out = new ArrayList<>();
+        for (List<UUID> p : slotPairs()) for (UUID u : p) if (u != null && !out.contains(u)) out.add(u);
+        return out;
+    }
+
+    /**
+     * Parejas para las cajas de crianza, en orden: las de cada crianza y después sus reservados, de dos en dos.
+     * Cada elemento tiene 2 lugares (macho, hembra); un lugar puede ser null.
+     */
+    public List<List<UUID>> slotPairs() {
+        List<List<UUID>> out = new ArrayList<>();
         for (Crianza c : crianzas) {
-            for (List<UUID> p : c.pairs()) for (UUID u : p) if (!out.contains(u)) out.add(u);
-            for (UUID u : c.reserved()) if (!out.contains(u)) out.add(u);
+            for (List<UUID> p : c.pairs()) {
+                List<UUID> two = new ArrayList<>(2);
+                two.add(p.size() > 0 ? p.get(0) : null);
+                two.add(p.size() > 1 ? p.get(1) : null);
+                out.add(two);
+            }
+            for (int i = 0; i < c.reserved().size(); i += 2) {
+                List<UUID> two = new ArrayList<>(2);
+                two.add(c.reserved().get(i));
+                two.add(i + 1 < c.reserved().size() ? c.reserved().get(i + 1) : null);
+                out.add(two);
+            }
         }
         return out;
     }
@@ -86,21 +124,24 @@ public final class WikiPairs {
             if (c.has("pares")) for (JsonElement pe : c.getAsJsonArray("pares")) {
                 JsonObject p = pe.getAsJsonObject();
                 int n = p.has("n") ? p.get("n").getAsInt() : pairs.size() + 1;
-                String step = str(p, "paso", ""), state = str(p, "estado", "lista");
+                String state = str(p, "estado", "lista");
                 List<UUID> change = new ArrayList<>();
                 if (p.has("cambio")) for (JsonElement x : p.getAsJsonArray("cambio")) {
                     UUID u = uuid(x.getAsString());
                     if (u != null) change.add(u);
                 }
                 UUID a = uuid(str(p, "a", "")), b = uuid(str(p, "b", ""));
+                boolean fa = "F".equals(str(p, "ga", "M")), fb = !"M".equals(str(p, "gb", "F"));
+                boolean ca = p.has("ca") ? p.get("ca").getAsBoolean() : change.contains(a);
+                boolean cb = p.has("cb") ? p.get("cb").getAsBoolean() : change.contains(b);
                 List<UUID> pair = new ArrayList<>(2);
                 if (a != null) {
                     pair.add(a);
-                    marks.putIfAbsent(a, new Mark(id, name, color, n, false, step, state, change.contains(a)));
+                    marks.putIfAbsent(a, new Mark(id, name, color, n, fa, str(p, "bra", ""), state, ca, b));
                 }
                 if (b != null) {
                     pair.add(b);
-                    marks.putIfAbsent(b, new Mark(id, name, color, n, true, step, state, change.contains(b)));
+                    marks.putIfAbsent(b, new Mark(id, name, color, n, fb, str(p, "brb", ""), state, cb, a));
                 }
                 pairs.add(Collections.unmodifiableList(pair));
             }
@@ -110,7 +151,7 @@ public final class WikiPairs {
                 UUID u = uuid(str(r, "u", ""));
                 if (u == null) continue;
                 reserved.add(u);
-                marks.putIfAbsent(u, new Mark(id, name, color, 0, false, str(r, "paso", ""), "reservado", false));
+                marks.putIfAbsent(u, new Mark(id, name, color, 0, "F".equals(str(r, "g", "M")), str(r, "br", ""), "reservado", false, null));
             }
             list.add(new Crianza(id, name, color, Collections.unmodifiableList(pairs), Collections.unmodifiableList(reserved)));
         }

@@ -51,10 +51,12 @@ final class EggHover {
         // Crianza de la wiki: a qué crianza y pareja va, qué paso y si cambia de género.
         List<String> wiki = new ArrayList<>();
         if (wm != null) {
-            wiki.add(wm.crianza() + " · " + (wm.pair() > 0 ? "Pareja " + wm.pair() : "Reservado"));
-            if (!wm.step().isBlank()) wiki.add("Paso: " + wm.step());
-            if (wm.pair() > 0) wiki.add("Va como " + (wm.female() ? "hembra" : "macho") + (wm.genderChange() ? " (cambio de género)" : ""));
-            if (!wm.state().isBlank() && !wm.state().equals("lista") && !wm.state().equals("reservado")) wiki.add("Estado: " + wm.state());
+            // Lo que hay que hacer: con quién se cría, qué sexo ponerle y qué IV pasa con su brazal (31 o 0)
+            wiki.add(wm.crianza() + " · " + (wm.pair() > 0 ? wm.label() : "espera una cría"));
+            if (wm.partner() != null) wiki.add("Cría con: " + Pairs.name(p, wm.partner()));
+            wiki.add("Ponle: " + (wm.female() ? "hembra" : "macho") + (wm.genderChange() ? " (paga el cambio)" : ""));
+            if (!wm.brazal().isBlank()) wiki.add("Brazal: pasa " + wm.brazal());
+            if (wm.pair() > 0) wiki.add("Estado: " + wm.stateLabel());
         }
         String title = eggs ? "Grupo huevo" : "Crianza";
         int w = ui.smallWidth(title);
