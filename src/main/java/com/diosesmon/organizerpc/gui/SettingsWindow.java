@@ -252,7 +252,7 @@ final class SettingsWindow {
             breederCount = -1;
         }
         boolean any = !c.noWiki.isEmpty();
-        if (ui.button(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quitar «No usar» (" + c.noWiki.size() + ")" : "Sin marcas «No usar»",
+        if (ui.button(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quitar «No usar»: " + c.noWiki.size() : "Sin marcas «No usar»",
                 any ? Ui.Style.NORMAL : Ui.Style.GHOST) && any) {
             c.noWiki.clear();
             save();
@@ -260,13 +260,13 @@ final class SettingsWindow {
             breederCount = -1;
             PanelState.status("Ya no hay Pokémon marcados «No usar».", Ui.TEXT_DIM);
         }
-        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, "Para marcar uno: botón de parejas (love ball),", "ficha «No usar» y click en el Pokémon.");
+        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, "Para marcar uno: botón de parejas, la love ball;", "ficha «No usar» y click en el Pokémon.");
         r += 22;
         if (ui.button(lx, r, iw, 18, "Descargar .txt de breeders", Ui.Style.PRIMARY)) {
             try {
                 int n = com.diosesmon.organizerpc.cobblemon.BreederExport.write(p.pc());
                 com.diosesmon.organizerpc.cobblemon.BreederExport.openFolder();
-                PanelState.status("breeders.txt listo (" + n + " Pokémon). Súbelo en la wiki: Crianza → Importar.", Ui.GREEN);
+                PanelState.status("breeders.txt listo, " + n + " Pokémon. Súbelo en la wiki: Mi stock → Importar .txt.", Ui.GREEN);
             } catch (Exception e) {
                 PanelState.status("No se pudo guardar breeders.txt: " + e.getMessage(), Ui.BAD);
             }
@@ -316,7 +316,7 @@ final class SettingsWindow {
         var wp = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs();
         int n = wp.orderedMembers().size();
         boolean can = !c.breedBoxes.isEmpty() && n > 0;
-        if (ui.button(lx, r, iw, 18, n > 0 ? "Mover las parejas de la wiki a las cajas (" + n + ")" : "La wiki todavía no eligió parejas",
+        if (ui.button(lx, r, iw, 18, n > 0 ? "Mover las parejas de la wiki a las cajas: " + n : "La wiki todavía no eligió parejas",
                 can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) {
             p.startBreedMove();
         }

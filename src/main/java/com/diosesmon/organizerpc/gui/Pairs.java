@@ -154,7 +154,7 @@ public final class Pairs {
             Pos pos = p.snapshot.positionOf(u);
             if (pos == null || pos.box() != box) continue;
             var m = wp.markOf(u);
-            out.add(m.crianza() + " " + (m.pair() > 0 ? m.label() : "(espera una cría)") + ": " + name(p, u) + (m.female() ? " ♀" : " ♂"));
+            out.add(m.crianza() + " " + (m.pair() > 0 ? m.label() : "espera una cría") + ": " + name(p, u) + (m.female() ? " ♀" : " ♂"));
         }
         return out;
     }

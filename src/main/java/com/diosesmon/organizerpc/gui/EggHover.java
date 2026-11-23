@@ -54,7 +54,7 @@ final class EggHover {
             // Lo que hay que hacer: con quién se cría, qué sexo ponerle y qué IV pasa con su brazal (31 o 0)
             wiki.add(wm.crianza() + " · " + (wm.pair() > 0 ? wm.label() : "espera una cría"));
             if (wm.partner() != null) wiki.add("Cría con: " + Pairs.name(p, wm.partner()));
-            wiki.add("Ponle: " + (wm.female() ? "hembra" : "macho") + (wm.genderChange() ? " (paga el cambio)" : ""));
+            wiki.add("Ponle: " + (wm.female() ? "hembra" : "macho") + (wm.genderChange() ? " · paga el cambio" : ""));
             if (!wm.brazal().isBlank()) wiki.add("Brazal: pasa " + wm.brazal());
             if (wm.pair() > 0) wiki.add("Estado: " + wm.stateLabel());
         }
