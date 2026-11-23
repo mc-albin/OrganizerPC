@@ -97,11 +97,13 @@ public final class PartyNameplates {
             var dispatcher = mc.getEntityRenderDispatcher();
             if (dispatcher.getSquaredDistanceToCamera(entity) > 1024.0) return;
             float time = (mc.world.getTime() % 360) + mc.getRenderTickCounter().getTickDelta(true);
-            float y = (float) entity.getBoundingBox().getLengthY() + 1.35F + MathHelper.sin(time / 10F) * 0.06F;
+            // Justo sobre la cabeza: sube o baja con la altura del Pokémon (su caja ya trae el tamaño de cada uno)
+            float h = (float) entity.getBoundingBox().getLengthY();
+            float y = h + 0.22F + Math.min(0.15F, h * 0.08F) + MathHelper.sin(time / 10F) * 0.04F;
             matrices.push();
             matrices.translate(0.0, y, 0.0);
             matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(time * 4F));
-            matrices.scale(0.7F, 0.7F, 0.7F);
+            matrices.scale(0.55F, 0.55F, 0.55F);
             mc.getItemRenderer().renderItem(stack, net.minecraft.client.render.model.json.ModelTransformationMode.GROUND,
                     net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE, net.minecraft.client.render.OverlayTexture.DEFAULT_UV,
                     matrices, consumers, mc.world, 0);

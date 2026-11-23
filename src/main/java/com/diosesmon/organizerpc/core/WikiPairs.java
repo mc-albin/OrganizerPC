@@ -31,7 +31,7 @@ public final class WikiPairs {
      * si hay que cambiárselo pagando, el IV que pasa con su brazal, el estado y con quién se cría.
      */
     public record Mark(String crianzaId, String crianza, int color, int pair, boolean female, String brazal, String state,
-                       boolean genderChange, UUID partner) {
+                       boolean genderChange, UUID partner, boolean genderless) {
         /** Texto corto de la insignia: inicial de la crianza y número de pareja («C1»), o «C·» si está reservado. */
         public String label() {
             String ini = crianza == null || crianza.isBlank() ? "C" : crianza.substring(0, 1).toUpperCase(Locale.ROOT);
@@ -137,11 +137,11 @@ public final class WikiPairs {
                 List<UUID> pair = new ArrayList<>(2);
                 if (a != null) {
                     pair.add(a);
-                    marks.putIfAbsent(a, new Mark(id, name, color, n, fa, str(p, "bra", ""), state, ca, b));
+                    marks.putIfAbsent(a, new Mark(id, name, color, n, fa, str(p, "bra", ""), state, ca, b, p.has("xa") && p.get("xa").getAsBoolean()));
                 }
                 if (b != null) {
                     pair.add(b);
-                    marks.putIfAbsent(b, new Mark(id, name, color, n, fb, str(p, "brb", ""), state, cb, a));
+                    marks.putIfAbsent(b, new Mark(id, name, color, n, fb, str(p, "brb", ""), state, cb, a, p.has("xb") && p.get("xb").getAsBoolean()));
                 }
                 pairs.add(Collections.unmodifiableList(pair));
             }
@@ -151,7 +151,7 @@ public final class WikiPairs {
                 UUID u = uuid(str(r, "u", ""));
                 if (u == null) continue;
                 reserved.add(u);
-                marks.putIfAbsent(u, new Mark(id, name, color, 0, "F".equals(str(r, "g", "M")), str(r, "br", ""), "reservado", false, null));
+                marks.putIfAbsent(u, new Mark(id, name, color, 0, "F".equals(str(r, "g", "M")), str(r, "br", ""), "reservado", false, null, false));
             }
             list.add(new Crianza(id, name, color, Collections.unmodifiableList(pairs), Collections.unmodifiableList(reserved)));
         }
