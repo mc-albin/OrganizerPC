@@ -21,5 +21,6 @@ abstract class PokemonNameTagMixin {
     private void organizerpc$ivLine(PokemonEntity entity, Text text, MatrixStack matrices, VertexConsumerProvider consumers,
                                     int light, float tickDelta, CallbackInfo ci) {
         PartyNameplates.drawUnderLabel(entity, matrices, consumers, light);
+        PartyNameplates.drawBrazal(entity, matrices, consumers, light);
     }
 }

@@ -207,8 +207,8 @@ public final class Pairs {
             badge(ctx, slot.getX(), slot.getY(), bp);
         } else {
             var wm = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().markOf(mon.getUuid());
-            // «C1♂»: crianza, número de pareja y el sexo que debe tener
-            if (wm != null) badge(ctx, slot.getX(), slot.getY(), wm.label() + (wm.female() ? "♀" : "♂"), wm.color());
+            // «C1»: crianza y número de pareja (el sexo que hay que ponerle está en el tooltip)
+            if (wm != null) badge(ctx, slot.getX(), slot.getY(), wm.label(), wm.color());
         }
         if (cfg().noWiki.contains(mon.getUuid())) noWikiBadge(ctx, slot.getX(), slot.getY());
     }

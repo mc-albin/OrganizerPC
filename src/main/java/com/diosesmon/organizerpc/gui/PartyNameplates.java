@@ -17,6 +17,12 @@ import org.joml.Matrix4f;
  */
 public final class PartyNameplates {
     private static int errors;
+    private static int brazalErrors;
+    /** Brazal de cada estadística (como la wiki los escribe: «31 DEF», «0 ATQ»…) → objeto de Cobblemon. */
+    private static final java.util.Map<String, String> BRAZALES = java.util.Map.of(
+            "PS", "cobblemon:power_weight", "ATQ", "cobblemon:power_bracer", "DEF", "cobblemon:power_belt",
+            "ATQ.E", "cobblemon:power_lens", "DEF.E", "cobblemon:power_band", "VEL", "cobblemon:power_anklet");
+    private static final java.util.Map<String, net.minecraft.item.ItemStack> STACKS = new java.util.HashMap<>();
 
     private PartyNameplates() {
     }
@@ -59,6 +65,49 @@ public final class PartyNameplates {
             matrices.pop();
         } catch (Throwable e) {
             if (errors++ < 3) OrganizerPCClient.LOGGER.error("Línea de IVs bajo el nombre", e);
+        }
+    }
+
+    /**
+     * Crianza de la wiki: sobre tu Pokémon sacado flota, girando, el brazal que le tienes que poner para su pareja
+     * (el de la estadística que pasa, en 31 o en 0). Solo si la wiki lo eligió para una crianza.
+     */
+    public static void drawBrazal(PokemonEntity entity, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
+        try {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (mc.options.hudHidden || entity.isInvisible() || mc.world == null) return;
+            var wiki = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs();
+            if (wiki.isEmpty()) return;
+            com.cobblemon.mod.common.pokemon.Pokemon mine = null;
+            for (var p : com.cobblemon.mod.common.client.CobblemonClient.INSTANCE.getStorage().getParty().getSlots()) {
+                if (p != null && p.getState() instanceof com.cobblemon.mod.common.pokemon.activestate.SentOutState s && s.getEntity() == entity) {
+                    mine = p;
+                    break;
+                }
+            }
+            if (mine == null) return;
+            var mark = wiki.markOf(mine.getUuid());
+            if (mark == null || mark.brazal().isBlank()) return;
+            String stat = mark.brazal().substring(mark.brazal().indexOf(' ') + 1).trim();
+            String id = BRAZALES.get(stat);
+            if (id == null) return;
+            net.minecraft.item.ItemStack stack = STACKS.computeIfAbsent(id, k -> new net.minecraft.item.ItemStack(
+                    net.minecraft.registry.Registries.ITEM.get(net.minecraft.util.Identifier.of(k))));
+            if (stack.isEmpty()) return;
+            var dispatcher = mc.getEntityRenderDispatcher();
+            if (dispatcher.getSquaredDistanceToCamera(entity) > 1024.0) return;
+            float time = (mc.world.getTime() % 360) + mc.getRenderTickCounter().getTickDelta(true);
+            float y = (float) entity.getBoundingBox().getLengthY() + 1.35F + MathHelper.sin(time / 10F) * 0.06F;
+            matrices.push();
+            matrices.translate(0.0, y, 0.0);
+            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(time * 4F));
+            matrices.scale(0.7F, 0.7F, 0.7F);
+            mc.getItemRenderer().renderItem(stack, net.minecraft.client.render.model.json.ModelTransformationMode.GROUND,
+                    net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE, net.minecraft.client.render.OverlayTexture.DEFAULT_UV,
+                    matrices, consumers, mc.world, 0);
+            matrices.pop();
+        } catch (Throwable e) {
+            if (brazalErrors++ < 3) OrganizerPCClient.LOGGER.error("Brazal flotante de la crianza", e);
         }
     }
 }
