@@ -1206,6 +1206,20 @@ public final class OrganizerPanel {
                 }
                 if (!PanelState.arrangeBoxes.remove((Integer) box)) PanelState.arrangeBoxes.add(box);
             }
+            case BREED -> {
+                if (locked(box)) {
+                    PanelState.status("La caja " + (box + 1) + " está bloqueada.", Ui.GOLD);
+                    return;
+                }
+                if (capture(box)) {
+                    PanelState.status("La caja " + (box + 1) + " es de captura: no puede ser de crianza.", Ui.GOLD);
+                    return;
+                }
+                List<Integer> bl = cfg().boxesFor(PanelState.breedPick);
+                if (!bl.remove((Integer) box)) bl.add(box);
+                OrganizerPCClient.saveConfig();
+                goToBox(box);
+            }
             case ASSIGN -> {
                 Category c = PanelState.editing;
                 if (c == null) {

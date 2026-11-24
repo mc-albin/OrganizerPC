@@ -1,5 +1,7 @@
 package com.diosesmon.organizerpc.gui;
 
+import com.cobblemon.mod.common.client.gui.pc.PCGUI;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.Identifier;
 
 import java.net.URI;
@@ -10,12 +12,15 @@ import java.time.Duration;
 import java.util.Locale;
 
 /**
- * Recuadro del creador debajo de la PC: su logo, «Creador del mod iAlbin73» y un punto rojo que se enciende
- * cuando está en vivo en Twitch. Click: abre su canal.
+ * Foto del creador en la esquina de abajo a la izquierda de la PC, con un punto rojo que se enciende cuando está
+ * en vivo en Twitch. Mide siempre los mismos píxeles de pantalla (igual en x1, x2, x3 y x4).
+ * Al pasar el ratón: «Creador del mod iAlbin73» y si está en vivo. Click: abre su canal.
  */
 final class CreatorBox {
     static final String CHANNEL = "ialbin73";
     private static final Identifier LOGO = Identifier.of("organizerpc", "textures/gui/creator.png");
+    /** Lado del recuadro en píxeles de pantalla. */
+    private static final int PX = 34;
     private static final long EVERY_MS = 120_000L;
     private static volatile boolean live, checking;
     private static volatile long checkedAt;
@@ -24,17 +29,29 @@ final class CreatorBox {
     private CreatorBox() {
     }
 
+    private static double gs() {
+        return MinecraftClient.getInstance().getWindow().getScaleFactor();
+    }
+
+    /** {x, y, lado} en coordenadas de la PC (GUI de Minecraft): pegado a la esquina de abajo a la izquierda. */
+    private static float[] real(OrganizerPanel p) {
+        float side = (float) (PX / gs());
+        float x = (p.gui.width - PCGUI.BASE_WIDTH) / 2F;
+        float y = (p.gui.height - PCGUI.BASE_HEIGHT) / 2F + PCGUI.BASE_HEIGHT + 2;
+        return new float[]{x, y, side};
+    }
+
+    /** Lo mismo en coordenadas del organizador (para el ratón y el tooltip). */
     static int[] rect(OrganizerPanel p) {
-        int w = 116, h = 28;
-        int x = p.pcLeft + (p.pcRight - p.pcLeft) / 2 - w / 2;
-        int y = p.pcBottom() + 3;
-        return new int[]{x, y, w, h};
+        float[] r = real(p);
+        return new int[]{(int) Math.floor(r[0] / p.k), (int) Math.floor(r[1] / p.k),
+                Math.max(1, Math.round(r[2] / p.k)), Math.max(1, Math.round(r[2] / p.k))};
     }
 
     static boolean visible(OrganizerPanel p) {
         if (PanelState.moveOpen || PanelState.preview != null) return false;
-        int[] r = rect(p);
-        return r[1] + r[3] <= p.vh - 1;
+        float[] r = real(p);
+        return r[1] + r[2] <= p.gui.height;
     }
 
     static boolean in(OrganizerPanel p, double mx, double my) {
@@ -45,35 +62,45 @@ final class CreatorBox {
 
     static void layout(OrganizerPanel p, Ui ui) {
         if (!visible(p)) return;
-        int[] r = rect(p);
-        int x = r[0], y = r[1], w = r[2], h = r[3];
+        int[] v = rect(p);
         if (ui.drawing()) {
             poll();
-            boolean hov = ui.hover(x, y, w, h);
-            ui.box(x, y, w, h, hov ? Ui.BTN_HOVER : Ui.BG, live ? Ui.alpha(0xFFFF3B3B, 0xC0) : hov ? Ui.BORDER_HOVER : Ui.BORDER);
-            ui.ctx.drawTexture(LOGO, x + 3, y + 3, 0, 0, 22, 22, 22, 22);
-            ui.small(x + 29, y + 5, "Creador del mod", Ui.TEXT_DIM);
-            ui.text(x + 29, y + 14, "iAlbin73", Ui.TEXT);
-            // Punto de directo: rojo encendido (con brillo que late) en vivo, apagado si no
-            int dx = x + w - 11, dy = y + 4;
-            if (live) {
-                float a = 0.5F + 0.5F * (float) Math.sin(System.currentTimeMillis() / 300.0);
-                ui.round(dx - 2, dy - 2, 11, 11, Ui.alpha(0xFFFF3B3B, (int) (0x30 + 0x50 * a)));
-                ui.round(dx, dy, 7, 7, 0xFFFF2A2A);
-                ui.round(dx + 1, dy + 1, 2, 2, 0xFFFFB0B0);
-            } else {
-                ui.round(dx, dy, 7, 7, 0xFF4A2326);
-            }
-            ui.small(x + w - 4 - ui.smallWidth(live ? "EN VIVO" : "Twitch"), y + 17, live ? "EN VIVO" : "Twitch", live ? 0xFFFF6B6B : Ui.TEXT_DIM);
+            draw(p, ui, ui.hover(v[0], v[1], v[2], v[3]));
         }
-        ui.tooltip(x, y, w, h, live ? "¡iAlbin73 está en vivo en Twitch!" : "iAlbin73 no está en vivo ahora.", "Click: abrir twitch.tv/" + CHANNEL);
-        if (ui.area(x, y, w, h)) {
+        ui.tooltip(v[0], v[1], v[2], v[3], "Creador del mod iAlbin73",
+                live ? "¡Está en vivo en Twitch!" : "No está en vivo ahora.", "", "Click: abrir twitch.tv/" + CHANNEL);
+        if (ui.area(v[0], v[1], v[2], v[3])) {
             try {
                 net.minecraft.util.Util.getOperatingSystem().open(URI.create("https://www.twitch.tv/" + CHANNEL));
             } catch (Exception ignored) {
                 // Sin navegador: no pasa nada.
             }
         }
+    }
+
+    /** Dibuja en píxeles de pantalla: deshace la escala del organizador y la de la GUI. */
+    private static void draw(OrganizerPanel p, Ui ui, boolean hov) {
+        float[] r = real(p);
+        var m = ui.ctx.getMatrices();
+        m.push();
+        m.scale(1F / p.k, 1F / p.k, 1F);
+        m.translate(r[0], r[1], 0F);
+        float inv = (float) (1.0 / gs());
+        m.scale(inv, inv, 1F);
+        int border = live ? 0xFFFF3B3B : hov ? 0xFFFFFFFF : 0xFF2A2E33;
+        ui.ctx.fill(0, 0, PX, PX, border);
+        ui.ctx.fill(1, 1, PX - 1, PX - 1, 0xFF101215);
+        ui.ctx.drawTexture(LOGO, 2, 2, 0, 0, PX - 4, PX - 4, PX - 4, PX - 4);
+        // Punto de directo en la esquina: rojo encendido (con brillo que late) en vivo, apagado si no
+        int d = 8, dx = PX - d - 2, dy = 2;
+        if (live) {
+            float a = 0.5F + 0.5F * (float) Math.sin(System.currentTimeMillis() / 300.0);
+            ui.ctx.fill(dx - 2, dy - 2, dx + d + 2, dy + d + 2, Ui.alpha(0xFFFF3B3B, (int) (0x40 + 0x60 * a)));
+        }
+        ui.ctx.fill(dx - 1, dy - 1, dx + d + 1, dy + d + 1, 0xFF101215);
+        ui.ctx.fill(dx, dy, dx + d, dy + d, live ? 0xFFFF2A2A : 0xFF5A2A2E);
+        if (live) ui.ctx.fill(dx + 1, dy + 1, dx + 3, dy + 3, 0xFFFFB0B0);
+        m.pop();
     }
 
     /** Pregunta cada 2 minutos (solo mientras se ve) si el canal está en directo. */

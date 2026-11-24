@@ -13,7 +13,7 @@ import java.util.UUID;
 /** Estado de la interfaz que sobrevive a redimensionar o reabrir la PC durante la sesión. */
 final class PanelState {
     /** Qué hace un click en la barra de cajas. */
-    enum StripMode { NAVIGATE, ASSIGN, LOCK, CAPTURE, ARRANGE }
+    enum StripMode { NAVIGATE, ASSIGN, LOCK, CAPTURE, ARRANGE, BREED }
 
     enum PreviewKind { ORGANIZE_ALL, ORGANIZE_BOX, ORGANIZE_CAPTURE, MOVE, ARRANGE, BREED }
 
@@ -99,6 +99,8 @@ final class PanelState {
     static boolean breedOnly;
     /** Ventanita de bordes visuales (legendarios, shinys, muy raros). */
     static boolean bordersOpen;
+    /** Crianza cuyas cajas se eligen en la barra de cajas (StripMode.BREED; «» = las generales). */
+    static String breedPick = "";
     /** Momento (ms) en que empezó a mover / se abrió la vista previa: evita clics dobles accidentales. */
     static long runStartedAt, previewOpenedAt;
 

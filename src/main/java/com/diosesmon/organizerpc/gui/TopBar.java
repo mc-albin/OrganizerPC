@@ -32,6 +32,8 @@ final class TopBar {
             Category c = PanelState.editing;
             ui.round(rx, ry + 5, 8, 8, c.color);
             modeRow(ui, rx, ry, rw, "Elige las cajas de «" + c.name + "»");
+        } else if (PanelState.stripMode == PanelState.StripMode.BREED) {
+            breedRow(p, ui, rx, ry, rw);
         } else if (PanelState.stripMode == PanelState.StripMode.LOCK) {
             ui.lock(rx + 1, ry + 5, Ui.RED);
             modeRow(ui, rx, ry, rw - 84, "Toca cajas para bloquearlas o desbloquearlas");
@@ -52,6 +54,24 @@ final class TopBar {
     private static void modeRow(Ui ui, int x, int y, int w, String text) {
         ui.textTrim(x + 13, y + 5, w - 80, text, Ui.TEXT);
         if (ui.button(x + w - 60, y, 60, H, "Listo", Ui.Style.PRIMARY)) PanelState.stripMode = PanelState.StripMode.NAVIGATE;
+    }
+
+    /** Elegir las cajas de una crianza tocándolas en la barra (como al crear una categoría). Listo vuelve a la ventana Crianza. */
+    private static void breedRow(OrganizerPanel p, Ui ui, int x, int y, int w) {
+        String id = PanelState.breedPick;
+        String name = null;
+        int col = Ui.THEME;
+        for (var cr : com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().crianzas()) if (cr.id().equals(id)) { name = cr.name(); col = cr.color(); }
+        ui.round(x, y + 5, 8, 8, col);
+        int n = p.cfg().boxesFor(id).size();
+        String t = (name == null ? "Toca las cajas generales de crianza" : "Toca las cajas de «" + name + "»") + " · " + n + (n == 1 ? " caja" : " cajas");
+        ui.textTrim(x + 13, y + 5, w - 80, t, Ui.TEXT);
+        if (ui.button(x + w - 60, y, 60, H, "Listo", Ui.Style.PRIMARY)) {
+            PanelState.stripMode = PanelState.StripMode.NAVIGATE;
+            PanelState.settingsOpen = true;
+            PanelState.breedOnly = true;
+        }
+        ui.tooltip(x + w - 60, y, 60, H, "Guardar y volver a la ventana Crianza.");
     }
 
     /** «Rojo: Sí/No»: el borde y el tono rojo de las cajas bloqueadas (No = solo el candado). */
@@ -353,13 +373,25 @@ final class TopBar {
                 fill = Ui.alpha(Ui.CYAN, 0x40);
                 stripe = Ui.CYAN;
             }
+            boolean breedMine = false;
+            if (PanelState.stripMode == PanelState.StripMode.BREED) {
+                int bc = Ui.THEME;
+                for (var cr : com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().crianzas()) if (cr.id().equals(PanelState.breedPick)) bc = cr.color();
+                breedMine = p.cfg().boxesFor(PanelState.breedPick).contains(b);
+                if (breedMine) {
+                    fill = Ui.alpha(bc, 0xB0);
+                    stripe = bc;
+                } else if (p.cfg().lockedOrBreed().contains(b) && !locked) {
+                    fill = Ui.alpha(Ui.PINK, 0x20);   // de otra crianza
+                }
+            }
             if (locked && p.cfg().lockTint) {
                 fill = 0xFF3A181D;
                 stripe = 0;
             }
             ui.round(cx, cy, cw, ch, fill);
             if (stripe != 0) ui.rect(cx + 1, cy + ch - 2, cw - 2, 2, stripe);
-            int border = b == current || mine ? 0xFFFFFFFF : hov ? Ui.BORDER_HOVER : Ui.alpha(0xFFFFFF, 0x18);
+            int border = b == current || mine || breedMine ? 0xFFFFFFFF : hov ? Ui.BORDER_HOVER : Ui.alpha(0xFFFFFF, 0x18);
             ui.roundBorder(cx, cy, cw, ch, border);
             int numColor = b == current || mine ? 0xFFFFFFFF : Ui.TEXT_DIM;
             if (locked) {
@@ -416,6 +448,7 @@ final class TopBar {
                 case CAPTURE -> "Click: " + (capture ? "quitar de captura" : "marcar como captura");
                 case ARRANGE -> "Click: " + (arrangeIdx >= 0 ? "quitar de" : "añadir a") + " las cajas a ordenar";
                 case ASSIGN -> editing == null ? "" : "Click: " + (mine ? "quitar de" : "añadir a") + " «" + editing.name + "»";
+                case BREED -> "Click: " + (breedMine ? "quitar de" : "añadir a") + " las cajas de esta crianza";
             });
             ui.tooltipLines(cx, cy, cw, ch, tip);
         }

@@ -235,7 +235,10 @@ final class SettingsWindow {
         r += ui.wrapped(lx, r, iw, "Para bloquear o marcar cajas de captura una a una, usa el candado y la Poké Ball junto a la barra de cajas.", Ui.TEXT_DIM);
     }
 
-    /** Breeders para la wiki de crianza: Ditto sí/no, descargar el .txt y la marca «No usar». */
+    /**
+     * Ventana Crianza (botón junto a AFK): breeders para la wiki arriba y, abajo, qué crianza mover y a qué cajas.
+     * Poco texto en la ventana: lo explicado va en los tooltips, en varias líneas.
+     */
     private static void breeding(OrganizerPanel p, Ui ui, int lx, int r, int iw) {
         OrganizerConfig c = p.cfg();
         long now = System.currentTimeMillis();
@@ -248,25 +251,36 @@ final class SettingsWindow {
             breederCountAt = now;
         }
         ui.text(lx, r, "Breeders para la wiki", Ui.TEXT);
-        ui.textRight(lx + iw, r, breederCount + " Pokémon", Ui.THEME);
-        r += 12;
-        r += ui.wrapped(lx, r, iw, "De 1 a 5 IVs en 31 o algún IV en 0, con grupo huevo. Sin cajas bloqueadas, parejas manuales, «No usar» ni muy raros.",
-                Ui.TEXT_DIM) + 5;
+        String cnt = breederCount + " Pokémon";
+        ui.textRight(lx + iw, r, cnt, Ui.THEME);
+        ui.tooltip(lx, r - 2, iw, 12,
+                "Pokémon que la wiki puede usar para criar:",
+                "de 1 a 5 IVs en 31 o algún IV en 0,",
+                "y con grupo huevo.",
+                "",
+                "No cuentan los de cajas bloqueadas,",
+                "los marcados «No usar» ni los muy raros",
+                "si los tienes apagados.");
+        r += 14;
+
         int hw = (iw - 4) / 2;
-        if (toggle(ui, lx, r, hw, "Incluir Ditto", c.breedDitto, "Sí: los Ditto también salen como breeders.", "No: la wiki nunca los usa.")) {
+        if (toggle(ui, lx, r, hw, "Incluir Ditto", c.breedDitto,
+                "Sí: los Ditto también salen como breeders.",
+                "No: la wiki nunca los usa.")) {
             c.breedDitto = !c.breedDitto;
-            save();
-            com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
-            breederCount = -1;
+            breedersChanged();
         }
         if (toggle(ui, lx + hw + 4, r, iw - hw - 4, "Usar muy raros", !c.breedNoUltra,
-                "Muy raros: su aparición más común es Muy raro", "(iniciales, fósiles…). No: la wiki nunca los usa.")) {
+                "Muy raros: su aparición más común es Muy raro,",
+                "como los iniciales o los fósiles.",
+                "",
+                "No: la wiki nunca los usa para criar.",
+                "Sí: los puede elegir como cualquier otro.")) {
             c.breedNoUltra = !c.breedNoUltra;
-            save();
-            com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
-            breederCount = -1;
+            breedersChanged();
         }
-        r += 21;
+        r += 20;
+
         if (ui.button(lx, r, hw, 16, "Marcar «No usar»", Ui.Style.NORMAL)) {
             close();
             PanelState.pairMode = true;
@@ -274,19 +288,21 @@ final class SettingsWindow {
             Pairs.selected();
             PanelState.status("Elige «No usar» arriba y haz click en los Pokémon que la wiki no debe usar.", Ui.TEXT_DIM);
         }
-        ui.tooltip(lx, r, hw, 16, "Marca Pokémon que la wiki nunca debe usar", "(y parejas a mano P1, P2…).");
+        ui.tooltip(lx, r, hw, 16,
+                "Marca Pokémon que la wiki nunca debe usar.",
+                "Se cierra esta ventana: elige «No usar» arriba",
+                "y haz click en cada Pokémon.");
         boolean any = !c.noWiki.isEmpty();
         if (ui.button(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quitar «No usar»: " + c.noWiki.size() : "Sin marcas «No usar»",
                 any ? Ui.Style.NORMAL : Ui.Style.GHOST) && any) {
             c.noWiki.clear();
-            save();
-            com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
-            breederCount = -1;
+            breedersChanged();
             PanelState.status("Ya no hay Pokémon marcados «No usar».", Ui.TEXT_DIM);
         }
-        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, "Quita la marca «No usar» de todos.");
-        r += 22;
-        if (ui.button(lx, r, iw, 18, "Descargar .txt de breeders", Ui.Style.PRIMARY)) {
+        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quita la marca «No usar» de todos." : "Ningún Pokémon está marcado «No usar».");
+        r += 20;
+
+        if (ui.button(lx, r, hw, 16, "Descargar .txt", Ui.Style.PRIMARY)) {
             try {
                 int n = com.diosesmon.organizerpc.cobblemon.BreederExport.write(p.pc());
                 com.diosesmon.organizerpc.cobblemon.BreederExport.openFolder();
@@ -295,105 +311,123 @@ final class SettingsWindow {
                 PanelState.status("No se pudo guardar breeders.txt: " + e.getMessage(), Ui.BAD);
             }
         }
-        ui.tooltip(lx, r, iw, 18, "Guarda organizerpc/breeders.txt en la carpeta", "del juego y la abre. En la wiki: Crianza → Importar.");
-        r += 24;
-        r = breedBoxes(p, ui, lx, r, iw);
+        ui.tooltip(lx, r, hw, 16,
+                "Guarda breeders.txt en la carpeta",
+                "organizerpc del juego y la abre.",
+                "",
+                "En la wiki: Crianza → Importar .txt.");
         boolean viewer = com.diosesmon.organizerpc.cobblemon.BreederExport.viewerPresent();
-        ui.wrapped(lx, r, iw, viewer
-                ? "Tienes WikiDiosesmonViewer: la wiki del juego recibe tus breeders sola cada vez que abres la PC."
-                : "Sin WikiDiosesmonViewer solo funciona el .txt. Con ese mod, la wiki del juego los recibe sola.",
-                viewer ? Ui.GREEN : Ui.TEXT_DIM);
+        int vx = lx + hw + 4, vw = iw - hw - 4;
+        ui.box(vx, r, vw, 16, Ui.FIELD, viewer ? Ui.alpha(Ui.GREEN, 0xA0) : Ui.alpha(Ui.RED, 0xA0));
+        ui.round(vx + 6, r + 5, 6, 6, viewer ? Ui.GREEN : Ui.RED);
+        ui.text(vx + 16, r + 4, "Tienes Wiki: " + (viewer ? "Sí" : "No"), viewer ? Ui.GREEN : 0xFFFF8A8A);
+        ui.tooltip(vx, r, vw, 16, viewer
+                ? new String[]{"Tienes WikiDiosesmonViewer.", "", "La wiki del juego recibe tus breeders sola",
+                "cada vez que abres la PC, y te dice", "qué parejas criar."}
+                : new String[]{"No tienes WikiDiosesmonViewer.", "", "Sin ese mod no puedes usar la crianza",
+                "automática: la wiki no recibe tus breeders", "ni manda las parejas.", "",
+                "Solo puedes descargar el .txt y subirlo", "a mano en la wiki."});
+        r += 22;
+
+        ui.rect(lx, r, iw, 1, 0x26FFFFFF);
+        r += 6;
+        breedBoxes(p, ui, lx, r, iw);
+    }
+
+    private static void breedersChanged() {
+        save();
+        com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
+        breederCount = -1;
     }
 
     /**
-     * Qué crianza mover (todas o una), sus 2 cajas (− / + para cambiarlas, × para quitar) y el botón que lleva ahí
-     * sus parejas. Cada crianza recuerda sus propias cajas.
+     * Qué crianza mover (todas o una) y sus cajas. Las cajas se eligen tocándolas en la barra de cajas,
+     * como al crear una categoría. Cada crianza recuerda las suyas.
      */
     private static int breedBoxes(OrganizerPanel p, Ui ui, int lx, int r, int iw) {
         OrganizerConfig c = p.cfg();
         var wp = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs();
         String sel = p.breedSel();
-        {
-            java.util.List<com.diosesmon.organizerpc.core.WikiPairs.Crianza> cs = wp.crianzas();
-            String name = "Todas";
-            int col = Ui.TEXT;
-            for (var cr : cs) if (cr.id().equals(sel)) { name = cr.name(); col = cr.color(); }
-            ui.small(lx, r + 5, "Crianza", Ui.TEXT_DIM);
-            int x0 = lx + 74, w = lx + iw - x0;
-            ui.box(x0, r, w, 16, Ui.BTN, Ui.BORDER);
-            ui.text(x0 + 20, r + 4, name + (sel.isEmpty() ? " (cajas generales)" : ""), col);
-            int k = -1;
-            for (int i = 0; i < cs.size(); i++) if (cs.get(i).id().equals(sel)) k = i;
-            int dir = 0;
-            if (ui.button(x0, r, 16, 16, "<", Ui.Style.NORMAL)) dir = -1;
-            if (ui.button(x0 + w - 16, r, 16, 16, ">", Ui.Style.NORMAL)) dir = 1;
-            if (dir != 0) {
-                int m = cs.size() + 1, nk = Math.floorMod(k + 1 + dir, m) - 1;   // -1 = todas
-                c.breedSel = nk < 0 ? "" : cs.get(nk).id();
-                save();
-                sel = p.breedSel();
-            }
-            ui.tooltip(x0, r, w, 16, "Elige qué crianza mover a sus cajas.", "Cada crianza recuerda sus propias cajas.");
-            r += 21;
+        java.util.List<com.diosesmon.organizerpc.core.WikiPairs.Crianza> cs = wp.crianzas();
+        String name = "Todas";
+        int col = Ui.TEXT;
+        for (var cr : cs) if (cr.id().equals(sel)) { name = cr.name(); col = cr.color(); }
+        int x0 = lx + 52, w = lx + iw - x0;
+
+        // Crianza: < nombre >
+        ui.small(lx, r + 5, "Crianza", Ui.TEXT_DIM);
+        ui.box(x0, r, w, 16, Ui.BTN, Ui.BORDER);
+        if (!sel.isEmpty()) ui.round(x0 + 20, r + 5, 6, 6, col);
+        ui.fit(x0 + (sel.isEmpty() ? 20 : 30), r + 4, w - 40 - (sel.isEmpty() ? 0 : 10), name, col, false);
+        int k = -1;
+        for (int i = 0; i < cs.size(); i++) if (cs.get(i).id().equals(sel)) k = i;
+        int dir = 0;
+        if (ui.button(x0, r, 16, 16, "<", Ui.Style.NORMAL)) dir = -1;
+        if (ui.button(x0 + w - 16, r, 16, 16, ">", Ui.Style.NORMAL)) dir = 1;
+        if (dir != 0) {
+            int m = cs.size() + 1, nk = Math.floorMod(k + 1 + dir, m) - 1;   // -1 = todas
+            c.breedSel = nk < 0 ? "" : cs.get(nk).id();
+            save();
+            sel = p.breedSel();
         }
+        ui.tooltip(x0 + 16, r, w - 32, 16, sel.isEmpty()
+                ? new String[]{"Todas tus crianzas de la wiki.", "", "Cada una va a sus propias cajas.",
+                "Las que no tienen cajas propias", "van a las cajas generales.", "", "Con < y > eliges una sola."}
+                : new String[]{"Crianza «" + name + "» de la wiki.", "", "Tiene sus propias cajas: así no se",
+                "mezcla con tus otras crianzas.", "", "Con < y > cambias de crianza."});
+        r += 20;
+
+        // Cajas: fichas de las elegidas + «Elegir cajas» (se tocan en la barra de cajas)
         java.util.List<Integer> boxes = c.boxesFor(sel);
-        ui.small(lx, r + 5, sel.isEmpty() ? "Generales" : "Sus cajas", Ui.TEXT_DIM);
-        int x0 = lx + 74, cw = (lx + iw - x0 - 4) / 2;
-        for (int i = 0; i < 2; i++) {
-            int bx = x0 + i * (cw + 4);
-            if (i < boxes.size()) {
-                int box = boxes.get(i);
-                ui.box(bx, r, cw, 16, Ui.BTN, Ui.BORDER);
-                ui.text(bx + 4, r + 4, "Caja " + (box + 1), Ui.TEXT);
-                int px = bx + cw - 45;
-                if (ui.button(px, r, 14, 16, "−", Ui.Style.NORMAL)) moveBreedBox(p, boxes, i, -1);
-                if (ui.button(px + 15, r, 14, 16, "+", Ui.Style.NORMAL)) moveBreedBox(p, boxes, i, 1);
-                if (ui.button(px + 30, r, 14, 16, "×", Ui.Style.DANGER)) {
-                    boxes.remove(i);
-                    save();
-                    return r + 22;
+        boolean general = !sel.isEmpty() && boxes.isEmpty() && !c.breedBoxes.isEmpty();
+        java.util.List<Integer> shown = general ? c.breedBoxes : boxes;
+        ui.small(lx, r + 5, "Cajas", Ui.TEXT_DIM);
+        int pickW = 78, bx = x0, limit = lx + iw - pickW - 4;
+        if (shown.isEmpty()) {
+            ui.text(bx, r + 4, "Ninguna", Ui.GOLD);
+        } else {
+            for (int i = 0; i < shown.size(); i++) {
+                String t = String.valueOf(shown.get(i) + 1);
+                int cw = Math.max(18, ui.width(t) + 10);
+                if (bx + cw > limit) {
+                    ui.text(bx, r + 4, "+" + (shown.size() - i), Ui.TEXT_DIM);
+                    break;
                 }
-                ui.tooltip(bx, r, cw - 46, 16, "Aquí van las parejas que elige la wiki.", "Organizar y ordenar no tocan esta caja.");
-            } else {
-                if (ui.button(bx, r, cw, 16, "+ Elegir caja", Ui.Style.NORMAL)) {
-                    int box = p.currentBox();
-                    while (boxes.contains(box) || c.lockedBoxes.contains(box)) box = (box + 1) % Math.max(1, p.boxCount());
-                    boxes.add(box);
-                    save();
-                }
-                ui.tooltip(bx, r, cw, 16, "Empieza con la caja abierta; cámbiala con − y +.");
-                break;
+                ui.box(bx, r, cw, 16, general ? Ui.BTN : Ui.alpha(sel.isEmpty() ? Ui.THEME : col, 0x50),
+                        general ? Ui.BORDER : sel.isEmpty() ? Ui.THEME : col);
+                ui.textCenter(bx + cw / 2 + 1, r + 4, t, general ? Ui.TEXT_DIM : Ui.TEXT);
+                bx += cw + 3;
             }
+            if (general && bx + 50 < limit) ui.small(bx + 2, r + 5, "generales", Ui.TEXT_DIM);
         }
-        r += 21;
-        if (!sel.isEmpty() && boxes.isEmpty()) {
-            r += ui.wrapped(lx, r, iw, c.breedBoxes.isEmpty() ? "Elige sus cajas: cada crianza va en las suyas, sin mezclarse."
-                    : "Sin cajas propias: usa las generales. Elige otras para que no se mezcle con las demás.", Ui.GOLD) + 4;
-        } else if (sel.isEmpty()) {
-            r += ui.wrapped(lx, r, iw, "Todas: cada crianza va a sus propias cajas; las que no tienen, a las generales.", Ui.TEXT_DIM) + 4;
+        ui.tooltip(x0, r, limit - x0, 16, shown.isEmpty()
+                ? new String[]{"Todavía no hay cajas para esta crianza.", "", "Pulsa «Elegir cajas» y tócalas", "en la barra de cajas."}
+                : general
+                ? new String[]{"Esta crianza no tiene cajas propias:", "usa las generales.", "",
+                "Elige otras para que no se mezcle", "con tus otras crianzas."}
+                : new String[]{"Aquí van las parejas de esta crianza,", "una pareja por fila, en orden.", "",
+                "Organizar y ordenar no tocan", "estas cajas."});
+        int px = lx + iw - pickW;
+        if (ui.button(px, r, pickW, 16, "Elegir cajas", Icons.BOX, Ui.Style.NORMAL)) {
+            PanelState.breedPick = sel;
+            PanelState.stripMode = PanelState.StripMode.BREED;
+            PanelState.settingsOpen = false;
+            if (!boxes.isEmpty()) p.goToBox(boxes.get(0));
         }
+        ui.tooltip(px, r, pickW, 16, "Se cierra esta ventana:", "toca las cajas en la barra de cajas,", "como al crear una categoría.", "", "Listo para volver aquí.");
+        r += 20;
+
         int n = wp.memberCount(sel);
         boolean can = !p.breedGroups().isEmpty() && n > 0;
-        String what = sel.isEmpty() ? "todas las crianzas" : "esta crianza";
-        if (ui.button(lx, r, iw, 18, n > 0 ? "Mover " + what + " a sus cajas: " + n : "La wiki todavía no eligió parejas",
-                can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) {
-            p.startBreedMove();
-        }
-        ui.tooltip(lx, r, iw, 18, "Una pareja por fila, en orden: C1, C2, C3…", "Antes ves la vista previa y confirmas.");
-        return r + 24;
-    }
-
-    private static void moveBreedBox(OrganizerPanel p, java.util.List<Integer> boxes, int i, int d) {
-        OrganizerConfig c = p.cfg();
-        int n = Math.max(1, p.boxCount()), box = boxes.get(i);
-        for (int k = 0; k < n; k++) {
-            box = Math.floorMod(box + d, n);
-            if (!boxes.contains(box) && !c.lockedBoxes.contains(box)) {
-                boxes.set(i, box);
-                save();
-                return;
-            }
-        }
+        String label = n == 0 ? "La wiki todavía no eligió parejas"
+                : (sel.isEmpty() ? "Mover todas las crianzas: " : "Mover esta crianza: ") + n + " Pokémon";
+        if (ui.button(lx, r, iw, 18, label, can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) p.startBreedMove();
+        ui.tooltip(lx, r, iw, 18, n == 0
+                ? new String[]{"Elige tus parejas en la wiki:", "Crianza → Parejas.", "", "Después vuelve aquí para moverlas."}
+                : !can ? new String[]{"Primero elige sus cajas", "con «Elegir cajas»."}
+                : new String[]{"Lleva las parejas a sus cajas:", "una pareja por fila, macho a la izquierda", "y hembra a la derecha, en orden C1, C2…", "",
+                "Antes ves la vista previa y confirmas."});
+        return r + 22;
     }
 
     private static void sizes(OrganizerPanel p, Ui ui, int lx, int r, int iw) {

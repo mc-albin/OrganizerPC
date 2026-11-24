@@ -246,7 +246,7 @@ public final class ConfigStore {
                     java.util.List<Integer> l = new java.util.ArrayList<>();
                     for (JsonElement e : en.getValue().getAsJsonArray()) {
                         int b = e.getAsInt();
-                        if (b >= 0 && !l.contains(b) && l.size() < 2) l.add(b);
+                        if (b >= 0 && !l.contains(b) && l.size() < 10) l.add(b);
                     }
                     if (!l.isEmpty()) cfg.breedBoxesBy.put(en.getKey(), l);
                 } catch (Exception ignored) {
@@ -259,7 +259,7 @@ public final class ConfigStore {
             for (JsonElement e : o.getAsJsonArray("breedBoxes")) {
                 try {
                     int b = e.getAsInt();
-                    if (b >= 0 && !cfg.breedBoxes.contains(b) && cfg.breedBoxes.size() < 2) cfg.breedBoxes.add(b);
+                    if (b >= 0 && !cfg.breedBoxes.contains(b) && cfg.breedBoxes.size() < 10) cfg.breedBoxes.add(b);
                 } catch (Exception ignored) {
                     // Caja ilegible: se ignora.
                 }
