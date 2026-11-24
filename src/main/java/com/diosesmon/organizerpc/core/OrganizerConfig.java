@@ -50,6 +50,12 @@ public final class OrganizerConfig {
     public final java.util.Set<java.util.UUID> noWiki = new java.util.LinkedHashSet<>();
     /** Contar a los Ditto como breeders para la wiki (por defecto no). */
     public boolean breedDitto = false;
+    /** No dar a la wiki como breeders las especies muy raras (iniciales, fósiles…): no se quieren gastar en crianza. */
+    public boolean breedNoUltra = true;
+    /** Cajas bloqueadas con borde y tono rojo (No = solo el candado). */
+    public boolean lockTint = true;
+    /** Bordes visuales en la PC: legendarios (dorado), shinys (arcoíris) y muy raros (morado). */
+    public boolean borderLegend = false, borderShiny = false, borderUltra = false;
     /** Cajas de crianza (hasta 2): ahí van las parejas de la wiki; organizar y ordenar no las tocan. */
     public final List<Integer> breedBoxes = new ArrayList<>();
     /** Cajas de cada crianza de la wiki (por su id): cada crianza puede ir a sus propias cajas. */

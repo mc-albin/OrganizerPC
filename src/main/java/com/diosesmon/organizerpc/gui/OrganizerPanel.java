@@ -68,6 +68,11 @@ public final class OrganizerPanel {
     /** Tamaño de la pantalla en coordenadas virtuales. */
     int vw, vh;
     int pcLeft, pcTop, pcRight;
+
+    /** Borde de abajo de la PC (coordenadas virtuales). */
+    int pcBottom() {
+        return pcTop + (int) Math.ceil(PCGUI.BASE_HEIGHT / k);
+    }
     int tbX, tbY, tbW, tbH, stripY, stripX0, chipW, perRow, stripRows;
     /** Columnas de botones a la izquierda de la barra de cajas y separación entre cajas. */
     int modeCols = 3, chipGap = 2;
@@ -82,7 +87,7 @@ public final class OrganizerPanel {
     /** Rectángulos de botones (para el tutorial): {x, y, w, h}. */
     int[] rOrganize = new int[4], rLock = new int[4], rCapture = new int[4], rHide = new int[4], rMove = new int[4],
             rAfk = new int[4], rEgg = new int[4], rBook = new int[4], rIvs = new int[4], rFilter = new int[4], rSearch = new int[4],
-            rSettings = new int[4], rPairs = new int[4];
+            rSettings = new int[4], rPairs = new int[4], rBreed = new int[4];
     /** La caja de búsqueda se dibujó este frame (no hay vista previa ni movimiento). */
     boolean searchShown;
     /** Zonas del editor de categorías para la guía: nombre, botón Listo y lista con scroll. */
@@ -595,6 +600,13 @@ public final class OrganizerPanel {
         } else {
             Search.popupOpen = false;
         }
+        CreatorBox.layout(this, ui);
+        if (PanelState.bordersOpen && PanelState.preview == null && !busy()) {
+            clearDepth();
+            Borders.popup(this, ui);
+        } else {
+            PanelState.bordersOpen = false;
+        }
         // Las ventanas tapan del todo lo de detrás (también los iconos, que se dibujan más "alto").
         if (arrangeVisible()) {
             clearDepth();
@@ -659,6 +671,18 @@ public final class OrganizerPanel {
         // Click fuera de la ventanita de filtro: se cierra (salvo en el propio botón, que la alterna).
         if (Search.popupOpen && !(mx >= rFilter[0] && mx < rFilter[0] + rFilter[2] && my >= rFilter[1] && my < rFilter[1] + rFilter[3])) {
             Search.popupOpen = false;
+        }
+        if (Borders.inPopup(this, mx, my)) {
+            unfocusFields();
+            if (button == 0) Borders.popup(this, ui);
+            return true;
+        }
+        if (PanelState.bordersOpen && !(rPairs != null && mx >= rPairs[0] && mx < rPairs[0] + rPairs[2] && my >= rPairs[1] && my < rPairs[1] + rPairs[3])) {
+            PanelState.bordersOpen = false;
+        }
+        if (CreatorBox.in(this, mx, my)) {
+            if (button == 0) CreatorBox.layout(this, ui);
+            return true;
         }
         if (inWin(PanelState.Win.ARRANGE, mx, my)) {
             unfocusFields();
@@ -800,16 +824,33 @@ public final class OrganizerPanel {
                 cfg().captureBoxes);
     }
 
-    /** Parejas de la wiki a las cajas de crianza, en orden: crianza por crianza, P1 macho, P1 hembra, P2… */
+    /** Parejas de la wiki a las cajas de crianza, en orden (C1, C2…): cada crianza en sus propias cajas, sin mezclarse. */
     Plan computeBreedPlan() {
         refreshSnapshot();
         if (snapshot == null) return null;
-        String sel = breedSel();
-        return Planner.placePairs(snapshot, com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().slotPairs(sel),
-                cfg().boxesFor(sel), cfg().lockedBoxes);
+        return Planner.placeGroups(snapshot, breedGroups(), cfg().lockedBoxes);
     }
 
-    /** Crianza elegida en Ajustes → Crianza (si ya no existe en la wiki, todas). */
+    /** Cajas de una crianza: las suyas o, si no eligió, las generales. */
+    List<Integer> breedBoxesOf(String crianzaId) {
+        List<Integer> own = cfg().breedBoxesBy.get(crianzaId);
+        return own != null && !own.isEmpty() ? own : cfg().breedBoxes;
+    }
+
+    /** Crianzas a mover (la elegida o todas), agrupadas por sus cajas: las que comparten cajas van una tras otra. */
+    java.util.Map<List<Integer>, List<List<UUID>>> breedGroups() {
+        String sel = breedSel();
+        java.util.Map<List<Integer>, List<List<UUID>>> out = new java.util.LinkedHashMap<>();
+        for (var cr : com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().crianzas()) {
+            if (!sel.isEmpty() && !cr.id().equals(sel)) continue;
+            List<Integer> boxes = breedBoxesOf(cr.id());
+            if (boxes.isEmpty()) continue;
+            out.computeIfAbsent(List.copyOf(boxes), k -> new ArrayList<>()).addAll(cr.slots());
+        }
+        return out;
+    }
+
+    /** Crianza elegida en el botón Crianza (si ya no existe en la wiki, todas). */
     String breedSel() {
         String sel = cfg().breedSel == null ? "" : cfg().breedSel;
         if (sel.isEmpty()) return "";
@@ -819,12 +860,13 @@ public final class OrganizerPanel {
 
     /** «Mover a las cajas de crianza»: vista previa y confirmación, como el resto. */
     void startBreedMove() {
-        if (cfg().boxesFor(breedSel()).isEmpty()) {
-            PanelState.status("Elige las cajas de esta crianza en Ajustes → Crianza.", Ui.GOLD);
-            return;
-        }
         if (com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().isEmpty()) {
             PanelState.status("La wiki todavía no eligió parejas.", Ui.GOLD);
+            return;
+        }
+        var groups = breedGroups();
+        if (groups.isEmpty()) {
+            PanelState.status("Elige las cajas de la crianza en el botón Crianza (junto a AFK).", Ui.GOLD);
             return;
         }
         Plan plan = computeBreedPlan();
@@ -834,7 +876,7 @@ public final class OrganizerPanel {
             return;
         }
         PanelState.settingsOpen = false;
-        openPreview(plan, PanelState.PreviewKind.BREED, cfg().boxesFor(breedSel()).get(0));
+        openPreview(plan, PanelState.PreviewKind.BREED, groups.keySet().iterator().next().get(0));
         if (!plan.noSpace().isEmpty()) PanelState.status(plan.noSpace().size() + " no caben en las cajas de esta crianza.", Ui.GOLD);
     }
 

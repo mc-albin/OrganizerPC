@@ -134,6 +134,7 @@ final class HiddenButton {
             if (button == 0) {
                 Ui.click();
                 PanelState.settingsOpen = !PanelState.settingsOpen;
+                PanelState.breedOnly = false;
                 if (PanelState.settingsOpen) p.syncHexFields();
             }
             return true;

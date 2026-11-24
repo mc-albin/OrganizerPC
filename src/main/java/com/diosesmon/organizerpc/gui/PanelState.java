@@ -95,6 +95,10 @@ final class PanelState {
     static boolean updateNotified;
     /** Pestaña abierta en Ajustes. */
     static int settingsTab = 0;
+    /** Ajustes abierto desde el botón Crianza (junto a AFK): solo las opciones de crianza, sin pestañas. */
+    static boolean breedOnly;
+    /** Ventanita de bordes visuales (legendarios, shinys, muy raros). */
+    static boolean bordersOpen;
     /** Momento (ms) en que empezó a mover / se abrió la vista previa: evita clics dobles accidentales. */
     static long runStartedAt, previewOpenedAt;
 

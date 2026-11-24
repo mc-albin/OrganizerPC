@@ -121,6 +121,11 @@ public final class ConfigStore {
         for (java.util.UUID u : cfg.noWiki) noWiki.add(u.toString());
         o.add("noWiki", noWiki);
         o.addProperty("breedDitto", cfg.breedDitto);
+        o.addProperty("breedNoUltra", cfg.breedNoUltra);
+        o.addProperty("lockTint", cfg.lockTint);
+        o.addProperty("borderLegend", cfg.borderLegend);
+        o.addProperty("borderShiny", cfg.borderShiny);
+        o.addProperty("borderUltra", cfg.borderUltra);
         JsonArray breedBoxes = new JsonArray();
         for (int b : cfg.breedBoxes) breedBoxes.add(b);
         o.add("breedBoxes", breedBoxes);
@@ -230,6 +235,11 @@ public final class ConfigStore {
             }
         }
         cfg.breedDitto = o.has("breedDitto") && o.get("breedDitto").getAsBoolean();
+        if (o.has("breedNoUltra")) cfg.breedNoUltra = o.get("breedNoUltra").getAsBoolean();
+        if (o.has("lockTint")) cfg.lockTint = o.get("lockTint").getAsBoolean();
+        cfg.borderLegend = o.has("borderLegend") && o.get("borderLegend").getAsBoolean();
+        cfg.borderShiny = o.has("borderShiny") && o.get("borderShiny").getAsBoolean();
+        cfg.borderUltra = o.has("borderUltra") && o.get("borderUltra").getAsBoolean();
         if (o.has("breedBoxesBy") && o.get("breedBoxesBy").isJsonObject()) {
             for (var en : o.getAsJsonObject("breedBoxesBy").entrySet()) {
                 try {

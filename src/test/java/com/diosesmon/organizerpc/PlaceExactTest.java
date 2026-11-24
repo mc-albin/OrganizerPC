@@ -56,6 +56,20 @@ class PlaceExactTest {
     }
 
     @Test
+    void eachCrianzaGoesToItsOwnBoxes() {
+        PcModel m = new PcModel(4);
+        java.util.List<java.util.List<UUID>> c1 = List.of(java.util.Arrays.asList(put(m, 0, 0), put(m, 0, 1)));
+        java.util.List<java.util.List<UUID>> c2 = List.of(java.util.Arrays.asList(put(m, 0, 2), put(m, 0, 3)));
+        java.util.Map<List<Integer>, java.util.List<java.util.List<UUID>>> groups = new java.util.LinkedHashMap<>();
+        groups.put(List.of(1), c1);
+        groups.put(List.of(2), c2);
+        PcModel after = Planner.placeGroups(m, groups, Set.of()).after();
+        assertEquals(new Pos(1, 0), after.positionOf(c1.get(0).get(0)));   // crianza 1 en su caja
+        assertEquals(new Pos(2, 0), after.positionOf(c2.get(0).get(0)));   // crianza 2 en la suya, también desde la fila 1
+        assertEquals(new Pos(2, 1), after.positionOf(c2.get(0).get(1)));
+    }
+
+    @Test
     void missingMembersAreSkipped() {
         PcModel m = new PcModel(2);
         UUID a = put(m, 0, 0);

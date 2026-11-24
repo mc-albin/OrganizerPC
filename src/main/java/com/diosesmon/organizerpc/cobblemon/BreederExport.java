@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * Escribe los breeders de la PC y del equipo en {@code organizerpc/breeders.txt} (carpeta del juego).
- * Lo hace el botón «Descargar .txt» de Ajustes → Crianza y, solo si está WikiDiosesmonViewer,
+ * Lo hace el botón «Descargar .txt» del botón Crianza (junto a AFK) y, solo si está WikiDiosesmonViewer,
  * también cada vez que cambia la PC abierta (la wiki del juego lo lee de ahí).
  */
 public final class BreederExport {
@@ -79,7 +79,9 @@ public final class BreederExport {
         if (p == null) return;
         if (cfg.noWiki.contains(p.getUuid()) || cfg.pairOf(p.getUuid()) != null) return;
         PokemonInfo info = PcReader.info(p);
-        boolean breeder = Breeders.isBreeder(info, cfg.breedDitto);
+        // Muy raros (iniciales, fósiles…): con el filtro puesto no son breeders (siguen en la lista para ver crías)
+        boolean breeder = Breeders.isBreeder(info, cfg.breedDitto)
+                && !(cfg.breedNoUltra && com.diosesmon.organizerpc.core.UltraRare.is(info.dex()));
         String species = p.getSpecies().getTranslatedName().getString();
         try {
             String form = p.getForm().getName();
@@ -104,7 +106,7 @@ public final class BreederExport {
     }
 
     private static String dittoLine() {
-        return "Ditto: " + (OrganizerPCClient.config().breedDitto ? "sí" : "no");
+        return "Ditto: " + (OrganizerPCClient.config().breedDitto ? "sí" : "no") + " · muy raros: " + (OrganizerPCClient.config().breedNoUltra ? "no" : "sí");
     }
 
     private static int write(List<Breeders.Entry> entries) throws IOException {

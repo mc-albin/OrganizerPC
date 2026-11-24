@@ -119,7 +119,8 @@ final class SlotMarks {
         boolean marking = PanelState.moveOpen;
         boolean locked = p.locked(p.currentBox());
         boolean searching = Search.active();
-        if (!cfg.showIvBadges && highlight == null && PanelState.selection.isEmpty() && !locked && !marking && !searching) return;
+        boolean tint = locked && cfg.lockTint, borders = Borders.any(cfg);
+        if (!cfg.showIvBadges && highlight == null && PanelState.selection.isEmpty() && !tint && !marking && !searching && !borders) return;
 
         Ui ui = new Ui(Ui.Mode.DRAW, ctx, mx, my);
         int size = StorageSlot.SIZE;
@@ -143,6 +144,7 @@ final class SlotMarks {
             } else if (marking && !locked && mx >= x && mx < x + size && my >= y && my < y + size) {
                 ui.roundBorder(x, y, size, size, Ui.alpha(Ui.GOLD, 0xA0));
             }
+            if (borders) Borders.slot(ui, ctx, x, y, size, mon, cfg);
             if (cfg.showIvBadges) ivBar(ctx, x, y, info);
             if (searching) {
                 // Búsqueda: los que coinciden se iluminan, el resto se oscurece.
@@ -155,7 +157,7 @@ final class SlotMarks {
             }
         }
         if (cfg.showIvBadges) p.partyIvMarks(ctx);
-        if (locked) {
+        if (tint) {
             int[] g = p.gridRect();
             if (g != null) {
                 ui.round(g[0] - 2, g[1] - 2, g[2] + 4, g[3] + 4, 0x16FF0000);

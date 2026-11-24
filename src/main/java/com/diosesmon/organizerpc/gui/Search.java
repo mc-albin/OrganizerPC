@@ -230,6 +230,10 @@ final class Search {
             if (eggOnly ? p.eggGroups().isEmpty() || !groups.containsAll(p.eggGroups()) : Collections.disjoint(groups, p.eggGroups())) return false;
         }
         if (!genders.isEmpty() && !genders.contains(p.gender())) return false;
+        if (wantsSex(terms) && com.diosesmon.organizerpc.cobblemon.SpeciesTraits.singleGender(p.speciesId())) {
+            singleHidden.add(SidePanel.speciesName(p.speciesId()));
+            return false;
+        }
         if (shinyOnly && !p.shiny()) return false;
         if (!sizes.isEmpty() && !sizes.contains(SizeVariation.sizeOf(p.scale()))) return false;
         for (StatKey k : StatKey.values()) {
@@ -261,6 +265,16 @@ final class Search {
         return true;
     }
 
+    /** Especies de un solo sexo que el filtro quitó (para avisar). */
+    static final Set<String> singleHidden = new java.util.TreeSet<>();
+
+    /** Se busca macho o hembra: para criar, una especie de un solo sexo (Jynx, Tauros…) no sirve para pasar el sexo. */
+    private static boolean wantsSex(List<Term> terms) {
+        if (genders.contains(PokemonInfo.MALE) || genders.contains(PokemonInfo.FEMALE)) return true;
+        for (Term t : terms) if (t instanceof GenderTerm g && (g.gender() == PokemonInfo.MALE || g.gender() == PokemonInfo.FEMALE)) return true;
+        return false;
+    }
+
     private static String key() {
         int pairsHash = 0;
         for (var bp : com.diosesmon.organizerpc.OrganizerPCClient.config().pairs) pairsHash = pairsHash * 31 + bp.number * 7 + bp.members.hashCode();
@@ -283,6 +297,7 @@ final class Search {
         cacheModel = model;
         cacheKey = k;
         hits.clear();
+        singleHidden.clear();
         total = 0;
         boxHits = new int[model == null ? 0 : model.boxCount()];
         if (model == null || !active()) return;
@@ -431,7 +446,13 @@ final class Search {
             ui.tooltip(bx, ry, cw, 12, k < 0 ? "Da igual" : "Exactamente " + k + "x31");
         }
         ry += 16;
-        ui.small(lx, ry, "Nº Pokédex: escribe 25 o 1-151 en Buscar", Ui.TEXT_DIM);
+        if (!singleHidden.isEmpty()) {
+            String names = String.join(", ", singleHidden);
+            ui.fit(lx, ry, iw, "Sin un solo sexo: " + names, Ui.PINK, false);
+            ui.tooltip(lx, ry - 1, iw, 9, "No salen: " + names, "Solo pueden ser de un sexo y romperían la cadena.");
+        } else {
+            ui.small(lx, ry, "Nº Pokédex: escribe 25 o 1-151 en Buscar", Ui.TEXT_DIM);
+        }
 
         int hw = (iw - 3) / 2;
         if (ui.button(lx, y + h - 20, hw, 15, "Limpiar", Ui.Style.NORMAL)) {

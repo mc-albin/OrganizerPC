@@ -431,11 +431,27 @@ public final class Planner {
      * en la PC no ocupan fila. Los que no caben en las cajas van a noSpace.
      */
     public static Plan placePairs(PcModel original, List<List<UUID>> pairs, List<Integer> boxes, Set<Integer> locked) {
+        java.util.Map<List<Integer>, List<List<UUID>>> one = new java.util.LinkedHashMap<>();
+        one.put(boxes, pairs);
+        return placeGroups(original, one, locked);
+    }
+
+    /**
+     * Varias crianzas a la vez, cada una a sus propias cajas: cada grupo (cajas → cruces) se coloca como
+     * {@link #placePairs}, empezando en la primera fila de sus cajas. Así dos crianzas nunca se mezclan.
+     */
+    public static Plan placeGroups(PcModel original, java.util.Map<List<Integer>, List<List<UUID>>> groups, Set<Integer> locked) {
+        List<UUID> members = new ArrayList<>();
+        List<Pos> pos = new ArrayList<>();
+        for (var g : groups.entrySet()) placeGroup(original, g.getValue(), g.getKey(), locked, members, pos);
+        return placeAt(original, members, pos, locked);
+    }
+
+    private static void placeGroup(PcModel original, List<List<UUID>> pairs, List<Integer> boxes, Set<Integer> locked,
+                                   List<UUID> members, List<Pos> pos) {
         List<Integer> targets = new ArrayList<>();
         for (int b : boxes) if (b >= 0 && b < original.boxCount() && !locked.contains(b) && !targets.contains(b)) targets.add(b);
         int rows = PcModel.SLOTS_PER_BOX / 6, perBox = rows * 2;
-        List<UUID> members = new ArrayList<>();
-        List<Pos> pos = new ArrayList<>();
         int k = -1;
         for (List<UUID> two : pairs) {
             boolean here = false;
@@ -457,7 +473,6 @@ public final class Planner {
                 pos.add(new Pos(box, row * 6 + block * 4 + side));
             }
         }
-        return placeAt(original, members, pos, locked);
     }
 
     /** Lleva cada Pokémon a su lugar ({@code pos} null = no cabe). Se saltan los que no están en la PC o están en cajas bloqueadas. */

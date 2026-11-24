@@ -11,7 +11,7 @@ import net.minecraft.client.MinecraftClient;
  */
 final class SettingsWindow {
     static final int TAB_GENERAL = 0, TAB_MARKS = 1, TAB_BOXES = 2, TAB_SIZES = 3, TAB_THEME = 4, TAB_BREED = 5;
-    private static final String[] TABS = {"General", "Marcas", "Cajas", "Tamaños", "Tema", "Crianza"};
+    private static final String[] TABS = {"General", "Marcas", "Cajas", "Tamaños", "Tema"};
     /** Breeders contados para la pestaña Crianza (se recuentan cada segundo, no en cada fotograma). */
     private static int breederCount = -1;
     private static long breederCountAt;
@@ -40,8 +40,9 @@ final class SettingsWindow {
         int[] w = p.win(PanelState.Win.SETTINGS);
         int x = w[0], y = w[1], W = w[2], H = w[3];
         ui.panel(x, y, W, H);
-        ui.icon(Icons.SETTINGS, x + 8, y + 7, 12);
-        ui.text(x + 23, y + 9, "Ajustes", Ui.TEXT);
+        boolean breed = PanelState.breedOnly;
+        ui.icon(breed ? Icons.PAIR : Icons.SETTINGS, x + 8, y + 7, 12);
+        ui.text(x + 23, y + 9, breed ? "Crianza" : "Ajustes", Ui.TEXT);
 
         if (ui.button(x + W - 18, y + 5, 13, 13, "", Ui.Style.GHOST)) {
             close();
@@ -49,7 +50,15 @@ final class SettingsWindow {
         }
         ui.cross(x + W - 15, y + 8, 7, Ui.TEXT_DIM);
         ui.tooltip(x + W - 18, y + 5, 13, 13, "Cerrar (Esc)");
+        if (breed) {
+            // Botón Crianza (junto a AFK): solo sus opciones, sin pestañas
+            ui.rect(x + 6, y + 21, W - 12, 1, 0x26FFFFFF);
+            breeding(p, ui, x + 10, y + 27, W - 20);
+            if (ui.button(x + 10, y + H - 22, W - 20, 16, "Listo", Ui.Style.LIGHT)) close();
+            return;
+        }
         updateRow(ui, x + 70, y + 4, x + W - 22);
+        if (PanelState.settingsTab >= TABS.length) PanelState.settingsTab = 0;
 
         // Pestañas en su propia fila, todas del mismo ancho (antes tapaban el título).
         int n = TABS.length, gap = 3, ty = y + 23;
@@ -71,7 +80,6 @@ final class SettingsWindow {
             case TAB_BOXES -> boxes(p, ui, lx, r, iw);
             case TAB_SIZES -> sizes(p, ui, lx, r, iw);
             case TAB_THEME -> theme(p, ui, lx, r, iw);
-            case TAB_BREED -> breeding(p, ui, lx, r, iw);
             default -> general(p, ui, lx, r, iw);
         }
 
@@ -242,7 +250,7 @@ final class SettingsWindow {
         ui.text(lx, r, "Breeders para la wiki", Ui.TEXT);
         ui.textRight(lx + iw, r, breederCount + " Pokémon", Ui.THEME);
         r += 12;
-        r += ui.wrapped(lx, r, iw, "De 1 a 5 IVs en 31 o algún IV en 0, con grupo huevo. Sin cajas bloqueadas, parejas manuales ni «No usar».",
+        r += ui.wrapped(lx, r, iw, "De 1 a 5 IVs en 31 o algún IV en 0, con grupo huevo. Sin cajas bloqueadas, parejas manuales, «No usar» ni muy raros.",
                 Ui.TEXT_DIM) + 5;
         int hw = (iw - 4) / 2;
         if (toggle(ui, lx, r, hw, "Incluir Ditto", c.breedDitto, "Sí: los Ditto también salen como breeders.", "No: la wiki nunca los usa.")) {
@@ -251,6 +259,22 @@ final class SettingsWindow {
             com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
             breederCount = -1;
         }
+        if (toggle(ui, lx + hw + 4, r, iw - hw - 4, "Usar muy raros", !c.breedNoUltra,
+                "Muy raros: su aparición más común es Muy raro", "(iniciales, fósiles…). No: la wiki nunca los usa.")) {
+            c.breedNoUltra = !c.breedNoUltra;
+            save();
+            com.diosesmon.organizerpc.cobblemon.BreederExport.markDirty();
+            breederCount = -1;
+        }
+        r += 21;
+        if (ui.button(lx, r, hw, 16, "Marcar «No usar»", Ui.Style.NORMAL)) {
+            close();
+            PanelState.pairMode = true;
+            PanelState.stripMode = PanelState.StripMode.NAVIGATE;
+            Pairs.selected();
+            PanelState.status("Elige «No usar» arriba y haz click en los Pokémon que la wiki no debe usar.", Ui.TEXT_DIM);
+        }
+        ui.tooltip(lx, r, hw, 16, "Marca Pokémon que la wiki nunca debe usar", "(y parejas a mano P1, P2…).");
         boolean any = !c.noWiki.isEmpty();
         if (ui.button(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quitar «No usar»: " + c.noWiki.size() : "Sin marcas «No usar»",
                 any ? Ui.Style.NORMAL : Ui.Style.GHOST) && any) {
@@ -260,7 +284,7 @@ final class SettingsWindow {
             breederCount = -1;
             PanelState.status("Ya no hay Pokémon marcados «No usar».", Ui.TEXT_DIM);
         }
-        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, "Para marcar uno: botón de parejas, la love ball;", "ficha «No usar» y click en el Pokémon.");
+        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, "Quita la marca «No usar» de todos.");
         r += 22;
         if (ui.button(lx, r, iw, 18, "Descargar .txt de breeders", Ui.Style.PRIMARY)) {
             try {
@@ -313,7 +337,7 @@ final class SettingsWindow {
             r += 21;
         }
         java.util.List<Integer> boxes = c.boxesFor(sel);
-        ui.small(lx, r + 5, "Sus cajas", Ui.TEXT_DIM);
+        ui.small(lx, r + 5, sel.isEmpty() ? "Generales" : "Sus cajas", Ui.TEXT_DIM);
         int x0 = lx + 74, cw = (lx + iw - x0 - 4) / 2;
         for (int i = 0; i < 2; i++) {
             int bx = x0 + i * (cw + 4);
@@ -342,8 +366,14 @@ final class SettingsWindow {
             }
         }
         r += 21;
+        if (!sel.isEmpty() && boxes.isEmpty()) {
+            r += ui.wrapped(lx, r, iw, c.breedBoxes.isEmpty() ? "Elige sus cajas: cada crianza va en las suyas, sin mezclarse."
+                    : "Sin cajas propias: usa las generales. Elige otras para que no se mezcle con las demás.", Ui.GOLD) + 4;
+        } else if (sel.isEmpty()) {
+            r += ui.wrapped(lx, r, iw, "Todas: cada crianza va a sus propias cajas; las que no tienen, a las generales.", Ui.TEXT_DIM) + 4;
+        }
         int n = wp.memberCount(sel);
-        boolean can = !boxes.isEmpty() && n > 0;
+        boolean can = !p.breedGroups().isEmpty() && n > 0;
         String what = sel.isEmpty() ? "todas las crianzas" : "esta crianza";
         if (ui.button(lx, r, iw, 18, n > 0 ? "Mover " + what + " a sus cajas: " + n : "La wiki todavía no eligió parejas",
                 can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) {

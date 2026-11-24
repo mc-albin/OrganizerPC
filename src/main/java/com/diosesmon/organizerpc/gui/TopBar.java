@@ -34,7 +34,8 @@ final class TopBar {
             modeRow(ui, rx, ry, rw, "Elige las cajas de «" + c.name + "»");
         } else if (PanelState.stripMode == PanelState.StripMode.LOCK) {
             ui.lock(rx + 1, ry + 5, Ui.RED);
-            modeRow(ui, rx, ry, rw, "Toca cajas para bloquearlas o desbloquearlas");
+            modeRow(ui, rx, ry, rw - 84, "Toca cajas para bloquearlas o desbloquearlas");
+            lockTintButton(p, ui, rx + rw - 80, ry, 80);
         } else if (PanelState.stripMode == PanelState.StripMode.ARRANGE) {
             ui.icon(Icons.BOX, rx - 1, ry + 3, 11);
             modeRow(ui, rx, ry, rw, "Toca las cajas que quieres ordenar (en orden)");
@@ -53,6 +54,16 @@ final class TopBar {
         if (ui.button(x + w - 60, y, 60, H, "Listo", Ui.Style.PRIMARY)) PanelState.stripMode = PanelState.StripMode.NAVIGATE;
     }
 
+    /** «Rojo: Sí/No»: el borde y el tono rojo de las cajas bloqueadas (No = solo el candado). */
+    static void lockTintButton(OrganizerPanel p, Ui ui, int x, int y, int w) {
+        boolean on = p.cfg().lockTint;
+        if (ui.toggleButton(x, y, w, H, "Rojo: " + (on ? "Sí" : "No"), on)) {
+            p.cfg().lockTint = !on;
+            com.diosesmon.organizerpc.OrganizerPCClient.saveConfig();
+        }
+        ui.tooltip(x, y, w, H, "Borde y tono rojo de las cajas bloqueadas.", "No: solo se ve el candado.");
+    }
+
     private static int bw(Ui ui, String label, boolean icon) {
         return ui.width(label) + (icon ? 15 : 0) + 12;
     }
@@ -61,7 +72,8 @@ final class TopBar {
         boolean afk = AfkTracker.isAfk();
         int afkW = ui.width("AFK") + 20;
         int filterW = ui.width("Filtrar") + 27;
-        int right = x + w - afkW - 6;
+        int breedW = 20;
+        int right = x + w - afkW - 6 - breedW - 3;
 
         String[] labels = {"Organizar PC", "Capturas", "Ordenar"};
         ItemStack[] icons = {Icons.PC, Icons.POKE_BALL, Icons.IVS};
@@ -114,6 +126,17 @@ final class TopBar {
         }
         if (fOn) ui.round(fx + filterW - 6, y + 2, 4, 4, Ui.THEME);
         ui.tooltip(fx, y, filterW, H, "Filtrar", "Grupo huevo, IV de cada estadística y nº de 31.", "Las cajas que tienen alguno se iluminan.");
+
+        // Crianza (junto a AFK): qué crianza mover, sus cajas, Ditto, muy raros y el .txt de breeders
+        int cbx = x + w - afkW - 3 - breedW;
+        p.rBreed = new int[]{cbx, y, breedW, H};
+        boolean bOn = PanelState.settingsOpen && PanelState.breedOnly;
+        if (ui.button(cbx, y, breedW, H, "", Icons.PAIR, bOn ? Ui.Style.SELECTED : Ui.Style.NORMAL)) {
+            PanelState.settingsOpen = true;
+            PanelState.breedOnly = true;
+        }
+        if (!com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().isEmpty()) ui.round(cbx + breedW - 6, y + 2, 4, 4, Ui.PINK);
+        ui.tooltip(cbx, y, breedW, H, "Crianza", "Mover cada crianza a sus cajas, Ditto, muy raros", "y los breeders para la wiki.");
 
         // AFK: siempre dice «AFK»; amarillo = estás AFK, apagado = no lo estás.
         int ax = x + w - afkW;
@@ -265,29 +288,23 @@ final class TopBar {
 
         r = modeRect(p, 5);
         p.rSettings = r;
-        if (ui.button(r[0], r[1], 16, 16, "", Icons.SETTINGS, PanelState.settingsOpen ? Ui.Style.SELECTED : Ui.Style.NORMAL)) {
-            PanelState.settingsOpen = !PanelState.settingsOpen;
+        if (ui.button(r[0], r[1], 16, 16, "", Icons.SETTINGS, PanelState.settingsOpen && !PanelState.breedOnly ? Ui.Style.SELECTED : Ui.Style.NORMAL)) {
+            PanelState.settingsOpen = !PanelState.settingsOpen || PanelState.breedOnly;
+            PanelState.breedOnly = false;
             if (PanelState.settingsOpen) p.syncHexFields();
         }
         boolean upd = com.diosesmon.organizerpc.update.Updater.state() == com.diosesmon.organizerpc.update.Updater.State.AVAILABLE;
         if (upd) ui.round(r[0] + 11, r[1] + 1, 4, 4, Ui.GOLD);
         ui.tooltip(r[0], r[1], 16, 16, "Ajustes", upd ? "¡Hay una versión nueva! Actualízala aquí." : "Marcas, tamaños, tema y más.");
 
+        // Donde estaba la love ball de parejas (ahora son automáticas): bordes visuales
         r = modeRect(p, 7);
         p.rPairs = r;
-        boolean pairOn = PanelState.pairMode;
-        if (ui.button(r[0], r[1], 16, 16, "", Icons.PAIR, pairOn ? Ui.Style.SELECTED : Ui.Style.NORMAL)) {
-            PanelState.pairMode = !pairOn;
-            if (PanelState.pairMode) {
-                PanelState.stripMode = PanelState.StripMode.NAVIGATE;
-                Pairs.selected();
-                PanelState.status("Elige una pareja arriba y haz click en sus dos Pokémon (o pulsa "
-                        + Pairs.KEY.getBoundKeyLocalizedText().getString() + " con el ratón encima).", Ui.TEXT_DIM);
-            }
+        boolean bordOn = Borders.any(p.cfg());
+        if (ui.button(r[0], r[1], 16, 16, "", Icons.BORDERS, PanelState.bordersOpen ? Ui.Style.SELECTED : bordOn ? Ui.Style.PRIMARY : Ui.Style.NORMAL)) {
+            PanelState.bordersOpen = !PanelState.bordersOpen;
         }
-        ui.tooltip(r[0], r[1], 16, 16, "Parejas de crianza", "Marca a mano qué Pokémon van juntos (P1, P2…)",
-                "para no perderlos entre los demás. No mueve nada.",
-                "Atajo: " + Pairs.KEY.getBoundKeyLocalizedText().getString() + " con el ratón encima de un Pokémon.");
+        ui.tooltip(r[0], r[1], 16, 16, "Bordes", "Resalta en la PC legendarios (dorado con estrella),", "shinys (arcoíris) y muy raros (morado).");
 
         r = modeRect(p, 6);
         p.rBook = r;
@@ -336,7 +353,7 @@ final class TopBar {
                 fill = Ui.alpha(Ui.CYAN, 0x40);
                 stripe = Ui.CYAN;
             }
-            if (locked) {
+            if (locked && p.cfg().lockTint) {
                 fill = 0xFF3A181D;
                 stripe = 0;
             }
