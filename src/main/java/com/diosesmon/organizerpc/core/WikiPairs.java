@@ -43,6 +43,11 @@ public final class WikiPairs {
             return "opcion".equals(state);
         }
 
+        /** Espera: aún no puede criar (espera la cría de otro cruce o le falta la pareja en tu PC). */
+        public boolean waiting() {
+            return "reservado".equals(state) || "falta".equals(state);
+        }
+
         /** Estado con palabras. */
         public String stateLabel() {
             return switch (state == null ? "" : state) {

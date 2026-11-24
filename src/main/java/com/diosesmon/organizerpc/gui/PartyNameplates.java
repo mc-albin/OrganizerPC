@@ -69,8 +69,9 @@ public final class PartyNameplates {
     }
 
     /**
-     * Crianza de la wiki: sobre tu Pokémon sacado flota, girando, el brazal que le tienes que poner para su pareja
-     * (el de la estadística que pasa, en 31 o en 0). Solo si la wiki lo eligió para una crianza.
+     * Crianza de la wiki: holograma sobre el nombre de tu Pokémon sacado. Un cartel con su cruce y el sexo con el que cría
+     * («C4 · ♀ HEMBRA · pasa 0 VEL») y, encima, girando, el brazal que le tienes que poner.
+     * Va en el mismo lugar que el nombre de Cobblemon, así queda arriba aunque el modelo sea más grande que su caja.
      */
     public static void drawBrazal(PokemonEntity entity, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
         try {
@@ -87,29 +88,67 @@ public final class PartyNameplates {
             }
             if (mine == null) return;
             var mark = wiki.markOf(mine.getUuid());
-            if (mark == null || mark.option() || mark.brazal().isBlank()) return;   // las opciones no llevan brazal
-            String stat = mark.brazal().substring(mark.brazal().indexOf(' ') + 1).trim();
-            String id = BRAZALES.get(stat);
-            if (id == null) return;
-            net.minecraft.item.ItemStack stack = STACKS.computeIfAbsent(id, k -> new net.minecraft.item.ItemStack(
-                    net.minecraft.registry.Registries.ITEM.get(net.minecraft.util.Identifier.of(k))));
-            if (stack.isEmpty()) return;
+            if (mark == null || mark.option()) return;   // las opciones no llevan holograma: tú decides en la wiki
+            net.minecraft.item.ItemStack stack = null;
+            if (!mark.brazal().isBlank()) {
+                String id = BRAZALES.get(mark.brazal().substring(mark.brazal().indexOf(' ') + 1).trim());
+                if (id != null) stack = STACKS.computeIfAbsent(id, k -> new net.minecraft.item.ItemStack(
+                        net.minecraft.registry.Registries.ITEM.get(net.minecraft.util.Identifier.of(k))));
+            }
             var dispatcher = mc.getEntityRenderDispatcher();
-            if (dispatcher.getSquaredDistanceToCamera(entity) > 1024.0) return;
+            double distSq = dispatcher.getSquaredDistanceToCamera(entity);
+            if (distSq > 1024.0) return;
             float time = (mc.world.getTime() % 360) + mc.getRenderTickCounter().getTickDelta(true);
-            // Justo sobre la cabeza: sube o baja con la altura del Pokémon (su caja ya trae el tamaño de cada uno)
-            float h = (float) entity.getBoundingBox().getLengthY();
-            float y = h + 0.22F + Math.min(0.15F, h * 0.08F) + MathHelper.sin(time / 10F) * 0.04F;
+            int full = net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE;
+
+            // Misma colocación que el nombre (drawUnderLabel): el cartel va una línea por encima del nombre
+            double s = Math.min(1.5, Math.max(0.65, MathHelper.map(distSq, -16.0, 96.0, 0.0, 1.0)));
+            double t = MathHelper.map(s, 0.65, 1.5, 0.0, 1.0);
+            double near = 1.0 - MathHelper.clamp((Math.sqrt(distSq) - 1.5) / 4.5, 0.0, 1.0);
+            float y = (float) entity.getBoundingBox().getLengthY() + 0.65F + (float) (near * 0.35);
+            double z = s + t + 0.12 + near * 0.3;
+            double yOff = t / 2.0 + near * 0.12;
+            float scale = (float) (MathHelper.lerp(t, 0.5, 1.0) * (1.0 - near * 0.08));
+
             matrices.push();
             matrices.translate(0.0, y, 0.0);
-            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(time * 4F));
-            matrices.scale(0.55F, 0.55F, 0.55F);
-            mc.getItemRenderer().renderItem(stack, net.minecraft.client.render.model.json.ModelTransformationMode.GROUND,
-                    net.minecraft.client.render.LightmapTextureManager.MAX_LIGHT_COORDINATE, net.minecraft.client.render.OverlayTexture.DEFAULT_UV,
-                    matrices, consumers, mc.world, 0);
+            matrices.multiply(dispatcher.getRotation());
+            matrices.translate(0.0, yOff, -z);
+
+            Text sign = sign(mark);
+            TextRenderer tr = mc.textRenderer;
+            matrices.push();
+            matrices.scale(0.025F * scale, -0.025F * scale, scale);
+            Matrix4f m = matrices.peek().getPositionMatrix();
+            float x = -tr.getWidth(sign) / 2F;
+            tr.draw(sign, x, -13, 0xFFFFFFFF, false, m, consumers, TextRenderer.TextLayerType.SEE_THROUGH, 0xC0101215, full);
+            tr.draw(sign, x, -13, 0xFFFFFFFF, false, m, consumers, TextRenderer.TextLayerType.NORMAL, 0, full);
+            matrices.pop();
+
+            if (stack != null && !stack.isEmpty()) {
+                // El brazal, girando sobre el cartel
+                matrices.translate(0.0, (0.025F * scale) * 15F + 0.12F * scale + MathHelper.sin(time / 10F) * 0.03F * scale, 0.0);
+                matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(time * 4F));
+                matrices.scale(0.6F * scale, 0.6F * scale, 0.6F * scale);
+                mc.getItemRenderer().renderItem(stack, net.minecraft.client.render.model.json.ModelTransformationMode.GROUND,
+                        full, net.minecraft.client.render.OverlayTexture.DEFAULT_UV, matrices, consumers, mc.world, 0);
+            }
             matrices.pop();
         } catch (Throwable e) {
             if (brazalErrors++ < 3) OrganizerPCClient.LOGGER.error("Brazal flotante de la crianza", e);
         }
+    }
+
+    /** «C4 · ♀ HEMBRA · pasa 0 VEL» (o «· espera cría» / «· falta pareja» si todavía no puede criar). */
+    static Text sign(com.diosesmon.organizerpc.core.WikiPairs.Mark mark) {
+        var out = Text.literal(mark.label() + " ").withColor(mark.color() & 0xFFFFFF);
+        int gc = mark.female() ? 0xFF77B4 : 0x5DADEC;
+        String g = mark.female() ? "♀ HEMBRA" : "♂ MACHO";
+        if (mark.genderless()) out.append(Text.literal("SIN SEXO: ponle " + g).withColor(gc));
+        else out.append(Text.literal(g).withColor(gc));
+        if ("reservado".equals(mark.state())) out.append(Text.literal(" · espera cría").withColor(0xB8BCC6));
+        else if ("falta".equals(mark.state())) out.append(Text.literal(" · falta pareja").withColor(0xFF6B6B));
+        if (!mark.brazal().isBlank()) out.append(Text.literal(" · pasa " + mark.brazal()).withColor(0xFFFFFF));
+        return out;
     }
 }

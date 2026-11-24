@@ -182,6 +182,26 @@ public final class Pairs {
         ctx.getMatrices().pop();
     }
 
+    /**
+     * Cruce de la wiki que todavía no se puede criar: el Pokémon se ve apagado y una franja en el medio dice
+     * «ESPERA» (espera la cría de otro cruce) o «FALTA» (su pareja no está en tu PC).
+     */
+    static void waitBadge(DrawContext ctx, int x, int y, String t, int color) {
+        int size = StorageSlot.SIZE;
+        ctx.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0x66000000);
+        var tr = MinecraftClient.getInstance().textRenderer;
+        double gs = MinecraftClient.getInstance().getWindow().getScaleFactor();
+        float sc = (float) (Math.max(1, Math.round(0.5 * gs)) / gs);
+        int h = (int) Math.ceil(8 * sc) + 2, by = y + (size - h) / 2;
+        ctx.fill(x + 2, by, x + size - 2, by + h, Ui.alpha(color, 0xD0));
+        float tw = tr.getWidth(t) * sc;
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(x + (size - tw) / 2F, by + 1, 0);
+        ctx.getMatrices().scale(sc, sc, 1F);
+        ctx.drawText(tr, t, 0, 0, 0xFF101215, false);
+        ctx.getMatrices().pop();
+    }
+
     /** Marca «No usar en la wiki»: «No» gris abajo a la izquierda del hueco. */
     static void noWikiBadge(DrawContext ctx, int x, int y) {
         int size = StorageSlot.SIZE;
@@ -209,6 +229,7 @@ public final class Pairs {
             var wm = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().markOf(mon.getUuid());
             // «C1»: crianza y número de pareja (el sexo que hay que ponerle está en el tooltip)
             if (wm != null) badge(ctx, slot.getX(), slot.getY(), wm.label(), wm.color());
+            if (wm != null && wm.waiting()) waitBadge(ctx, slot.getX(), slot.getY(), "falta".equals(wm.state()) ? "FALTA" : "ESPERA", wm.color());
         }
         if (cfg().noWiki.contains(mon.getUuid())) noWikiBadge(ctx, slot.getX(), slot.getY());
     }
