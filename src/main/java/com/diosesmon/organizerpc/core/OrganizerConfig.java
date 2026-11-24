@@ -52,11 +52,22 @@ public final class OrganizerConfig {
     public boolean breedDitto = false;
     /** Cajas de crianza (hasta 2): ahí van las parejas de la wiki; organizar y ordenar no las tocan. */
     public final List<Integer> breedBoxes = new ArrayList<>();
+    /** Cajas de cada crianza de la wiki (por su id): cada crianza puede ir a sus propias cajas. */
+    public final java.util.Map<String, List<Integer>> breedBoxesBy = new java.util.LinkedHashMap<>();
+    /** Crianza elegida para mover a las cajas («» = todas, a las cajas de crianza generales). */
+    public String breedSel = "";
+
+    /** Cajas de una crianza («» = las generales). Se crea vacía la primera vez. */
+    public List<Integer> boxesFor(String crianzaId) {
+        if (crianzaId == null || crianzaId.isEmpty()) return breedBoxes;
+        return breedBoxesBy.computeIfAbsent(crianzaId, k -> new ArrayList<>());
+    }
 
     /** Bloqueadas más las de crianza: lo que organizar y ordenar no deben tocar. */
     public java.util.Set<Integer> lockedOrBreed() {
         java.util.Set<Integer> s = new TreeSet<>(lockedBoxes);
         s.addAll(breedBoxes);
+        for (List<Integer> l : breedBoxesBy.values()) s.addAll(l);
         return s;
     }
 

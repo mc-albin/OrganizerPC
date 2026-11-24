@@ -112,9 +112,21 @@ public final class WikiPairs {
      * Cada elemento tiene 2 lugares (macho, hembra); un lugar puede ser null (la cría que falta o la pareja que no tienes).
      */
     public List<List<UUID>> slotPairs() {
+        return slotPairs("");
+    }
+
+    /** Cruces de una sola crianza (por su id; «» = todas). */
+    public List<List<UUID>> slotPairs(String crianzaId) {
         List<List<UUID>> out = new ArrayList<>();
-        for (Crianza c : crianzas) out.addAll(c.slots());
+        for (Crianza c : crianzas) if (crianzaId == null || crianzaId.isEmpty() || c.id().equals(crianzaId)) out.addAll(c.slots());
         return out;
+    }
+
+    /** Pokémon de una crianza que van a las cajas («» = todas). */
+    public int memberCount(String crianzaId) {
+        java.util.Set<UUID> s = new java.util.HashSet<>();
+        for (List<UUID> two : slotPairs(crianzaId)) for (UUID u : two) if (u != null) s.add(u);
+        return s.size();
     }
 
     public static WikiPairs parse(String json) {

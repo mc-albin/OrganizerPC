@@ -281,22 +281,51 @@ final class SettingsWindow {
                 viewer ? Ui.GREEN : Ui.TEXT_DIM);
     }
 
-    /** Las 2 cajas de crianza (− / + para cambiarlas, × para quitar) y el botón que lleva ahí las parejas de la wiki. */
+    /**
+     * Qué crianza mover (todas o una), sus 2 cajas (− / + para cambiarlas, × para quitar) y el botón que lleva ahí
+     * sus parejas. Cada crianza recuerda sus propias cajas.
+     */
     private static int breedBoxes(OrganizerPanel p, Ui ui, int lx, int r, int iw) {
         OrganizerConfig c = p.cfg();
-        ui.small(lx, r + 5, "Cajas de crianza", Ui.TEXT_DIM);
+        var wp = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs();
+        String sel = p.breedSel();
+        {
+            java.util.List<com.diosesmon.organizerpc.core.WikiPairs.Crianza> cs = wp.crianzas();
+            String name = "Todas";
+            int col = Ui.TEXT;
+            for (var cr : cs) if (cr.id().equals(sel)) { name = cr.name(); col = cr.color(); }
+            ui.small(lx, r + 5, "Crianza", Ui.TEXT_DIM);
+            int x0 = lx + 74, w = lx + iw - x0;
+            ui.box(x0, r, w, 16, Ui.BTN, Ui.BORDER);
+            ui.text(x0 + 20, r + 4, name + (sel.isEmpty() ? " (cajas generales)" : ""), col);
+            int k = -1;
+            for (int i = 0; i < cs.size(); i++) if (cs.get(i).id().equals(sel)) k = i;
+            int dir = 0;
+            if (ui.button(x0, r, 16, 16, "<", Ui.Style.NORMAL)) dir = -1;
+            if (ui.button(x0 + w - 16, r, 16, 16, ">", Ui.Style.NORMAL)) dir = 1;
+            if (dir != 0) {
+                int m = cs.size() + 1, nk = Math.floorMod(k + 1 + dir, m) - 1;   // -1 = todas
+                c.breedSel = nk < 0 ? "" : cs.get(nk).id();
+                save();
+                sel = p.breedSel();
+            }
+            ui.tooltip(x0, r, w, 16, "Elige qué crianza mover a sus cajas.", "Cada crianza recuerda sus propias cajas.");
+            r += 21;
+        }
+        java.util.List<Integer> boxes = c.boxesFor(sel);
+        ui.small(lx, r + 5, "Sus cajas", Ui.TEXT_DIM);
         int x0 = lx + 74, cw = (lx + iw - x0 - 4) / 2;
         for (int i = 0; i < 2; i++) {
             int bx = x0 + i * (cw + 4);
-            if (i < c.breedBoxes.size()) {
-                int box = c.breedBoxes.get(i);
+            if (i < boxes.size()) {
+                int box = boxes.get(i);
                 ui.box(bx, r, cw, 16, Ui.BTN, Ui.BORDER);
                 ui.text(bx + 4, r + 4, "Caja " + (box + 1), Ui.TEXT);
                 int px = bx + cw - 45;
-                if (ui.button(px, r, 14, 16, "−", Ui.Style.NORMAL)) moveBreedBox(p, i, -1);
-                if (ui.button(px + 15, r, 14, 16, "+", Ui.Style.NORMAL)) moveBreedBox(p, i, 1);
+                if (ui.button(px, r, 14, 16, "−", Ui.Style.NORMAL)) moveBreedBox(p, boxes, i, -1);
+                if (ui.button(px + 15, r, 14, 16, "+", Ui.Style.NORMAL)) moveBreedBox(p, boxes, i, 1);
                 if (ui.button(px + 30, r, 14, 16, "×", Ui.Style.DANGER)) {
-                    c.breedBoxes.remove(i);
+                    boxes.remove(i);
                     save();
                     return r + 22;
                 }
@@ -304,8 +333,8 @@ final class SettingsWindow {
             } else {
                 if (ui.button(bx, r, cw, 16, "+ Elegir caja", Ui.Style.NORMAL)) {
                     int box = p.currentBox();
-                    while (c.breedBoxes.contains(box) || c.lockedBoxes.contains(box)) box = (box + 1) % Math.max(1, p.boxCount());
-                    c.breedBoxes.add(box);
+                    while (boxes.contains(box) || c.lockedBoxes.contains(box)) box = (box + 1) % Math.max(1, p.boxCount());
+                    boxes.add(box);
                     save();
                 }
                 ui.tooltip(bx, r, cw, 16, "Empieza con la caja abierta; cámbiala con − y +.");
@@ -313,10 +342,10 @@ final class SettingsWindow {
             }
         }
         r += 21;
-        var wp = com.diosesmon.organizerpc.cobblemon.WikiSync.pairs();
-        int n = wp.orderedMembers().size();
-        boolean can = !c.breedBoxes.isEmpty() && n > 0;
-        if (ui.button(lx, r, iw, 18, n > 0 ? "Mover las parejas de la wiki a las cajas: " + n : "La wiki todavía no eligió parejas",
+        int n = wp.memberCount(sel);
+        boolean can = !boxes.isEmpty() && n > 0;
+        String what = sel.isEmpty() ? "todas las crianzas" : "esta crianza";
+        if (ui.button(lx, r, iw, 18, n > 0 ? "Mover " + what + " a sus cajas: " + n : "La wiki todavía no eligió parejas",
                 can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) {
             p.startBreedMove();
         }
@@ -324,13 +353,13 @@ final class SettingsWindow {
         return r + 24;
     }
 
-    private static void moveBreedBox(OrganizerPanel p, int i, int d) {
+    private static void moveBreedBox(OrganizerPanel p, java.util.List<Integer> boxes, int i, int d) {
         OrganizerConfig c = p.cfg();
-        int n = Math.max(1, p.boxCount()), box = c.breedBoxes.get(i);
+        int n = Math.max(1, p.boxCount()), box = boxes.get(i);
         for (int k = 0; k < n; k++) {
             box = Math.floorMod(box + d, n);
-            if (!c.breedBoxes.contains(box) && !c.lockedBoxes.contains(box)) {
-                c.breedBoxes.set(i, box);
+            if (!boxes.contains(box) && !c.lockedBoxes.contains(box)) {
+                boxes.set(i, box);
                 save();
                 return;
             }

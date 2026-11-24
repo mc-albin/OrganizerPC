@@ -124,6 +124,15 @@ public final class ConfigStore {
         JsonArray breedBoxes = new JsonArray();
         for (int b : cfg.breedBoxes) breedBoxes.add(b);
         o.add("breedBoxes", breedBoxes);
+        JsonObject by = new JsonObject();
+        for (var en : cfg.breedBoxesBy.entrySet()) {
+            if (en.getValue().isEmpty()) continue;
+            JsonArray a = new JsonArray();
+            for (int b : en.getValue()) a.add(b);
+            by.add(en.getKey(), a);
+        }
+        o.add("breedBoxesBy", by);
+        o.addProperty("breedSel", cfg.breedSel);
         JsonArray cats = new JsonArray();
         for (Category c : cfg.categories) cats.add(encode(c));
         o.add("categories", cats);
@@ -221,6 +230,21 @@ public final class ConfigStore {
             }
         }
         cfg.breedDitto = o.has("breedDitto") && o.get("breedDitto").getAsBoolean();
+        if (o.has("breedBoxesBy") && o.get("breedBoxesBy").isJsonObject()) {
+            for (var en : o.getAsJsonObject("breedBoxesBy").entrySet()) {
+                try {
+                    java.util.List<Integer> l = new java.util.ArrayList<>();
+                    for (JsonElement e : en.getValue().getAsJsonArray()) {
+                        int b = e.getAsInt();
+                        if (b >= 0 && !l.contains(b) && l.size() < 2) l.add(b);
+                    }
+                    if (!l.isEmpty()) cfg.breedBoxesBy.put(en.getKey(), l);
+                } catch (Exception ignored) {
+                    // Crianza ilegible: se ignora.
+                }
+            }
+        }
+        if (o.has("breedSel") && o.get("breedSel").isJsonPrimitive()) cfg.breedSel = o.get("breedSel").getAsString();
         if (o.has("breedBoxes")) {
             for (JsonElement e : o.getAsJsonArray("breedBoxes")) {
                 try {

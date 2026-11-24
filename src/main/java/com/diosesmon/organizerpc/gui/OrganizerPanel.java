@@ -804,14 +804,23 @@ public final class OrganizerPanel {
     Plan computeBreedPlan() {
         refreshSnapshot();
         if (snapshot == null) return null;
-        return Planner.placePairs(snapshot, com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().slotPairs(),
-                cfg().breedBoxes, cfg().lockedBoxes);
+        String sel = breedSel();
+        return Planner.placePairs(snapshot, com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().slotPairs(sel),
+                cfg().boxesFor(sel), cfg().lockedBoxes);
+    }
+
+    /** Crianza elegida en Ajustes → Crianza (si ya no existe en la wiki, todas). */
+    String breedSel() {
+        String sel = cfg().breedSel == null ? "" : cfg().breedSel;
+        if (sel.isEmpty()) return "";
+        for (var c : com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().crianzas()) if (c.id().equals(sel)) return sel;
+        return "";
     }
 
     /** «Mover a las cajas de crianza»: vista previa y confirmación, como el resto. */
     void startBreedMove() {
-        if (cfg().breedBoxes.isEmpty()) {
-            PanelState.status("Elige tus cajas de crianza en Ajustes → Crianza.", Ui.GOLD);
+        if (cfg().boxesFor(breedSel()).isEmpty()) {
+            PanelState.status("Elige las cajas de esta crianza en Ajustes → Crianza.", Ui.GOLD);
             return;
         }
         if (com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().isEmpty()) {
@@ -825,8 +834,8 @@ public final class OrganizerPanel {
             return;
         }
         PanelState.settingsOpen = false;
-        openPreview(plan, PanelState.PreviewKind.BREED, cfg().breedBoxes.get(0));
-        if (!plan.noSpace().isEmpty()) PanelState.status(plan.noSpace().size() + " no caben en las 2 cajas de crianza.", Ui.GOLD);
+        openPreview(plan, PanelState.PreviewKind.BREED, cfg().boxesFor(breedSel()).get(0));
+        if (!plan.noSpace().isEmpty()) PanelState.status(plan.noSpace().size() + " no caben en las cajas de esta crianza.", Ui.GOLD);
     }
 
     Plan recomputePreview() {
