@@ -50,7 +50,40 @@ final class EggHover {
         }
         // Crianza de la wiki: a qué crianza y pareja va, qué paso y si cambia de género.
         List<String> wiki = new ArrayList<>();
-        if (wm != null) {
+        List<Integer> wcol = new ArrayList<>();
+        if (wm != null && !wm.option() && (!wm.childGender().isBlank() || !wm.next().isBlank() || !wm.with().isBlank())) {
+            // Corto: el cruce, qué debe salir la cría, con quién y el brazal
+            wiki.add(wm.label() + " · " + wm.crianza());
+            wcol.add(wm.color());
+            if (wm.childFinal()) {
+                wiki.add("Cría: tu " + wm.crianza() + " final");
+                wcol.add(Ui.GOLD);
+            } else {
+                boolean f = "F".equals(wm.childGender());
+                wiki.add("Cría " + (f ? "HEMBRA" : "MACHO") + (wm.next().isBlank() ? "" : " → " + wm.next()));
+                wcol.add(f ? 0xFFFF77B4 : 0xFF5DADEC);
+            }
+            if (wm.partner() != null) {
+                wiki.add("Con " + Pairs.name(p, wm.partner()));
+                wcol.add(Ui.TEXT);
+            } else if (!wm.with().isBlank()) {
+                boolean falta = "falta".equals(wm.state());
+                wiki.add((falta ? "Falta " : "Con ") + wm.with());
+                wcol.add(falta ? 0xFFFF6B6B : Ui.TEXT);
+            }
+            if (wm.genderless()) {
+                wiki.add("Sin sexo: ponle " + (wm.female() ? "hembra" : "macho"));
+                wcol.add(wm.female() ? 0xFFFF77B4 : 0xFF5DADEC);
+            }
+            if (!wm.brazal().isBlank()) {
+                wiki.add("Brazal " + wm.brazal());
+                wcol.add(Ui.TEXT_DIM);
+            }
+            if ("criando".equals(wm.state()) || "evolucionar".equals(wm.state())) {
+                wiki.add(wm.stateLabel());
+                wcol.add(Ui.TEXT_DIM);
+            }
+        } else if (wm != null) {
             // Lo que hay que hacer: con quién se cría, qué sexo ponerle y qué IV pasa con su brazal (31 o 0)
             if (wm.option()) {
                 wiki.add(wm.crianza() + " · opción");
@@ -92,7 +125,7 @@ final class EggHover {
         if (!wiki.isEmpty() && eggs) ty += 4;
         for (int i = 0; i < wiki.size(); i++) {
             ui.round(x + 5, ty + 2, 4, 4, wm.color());
-            ui.text(x + 12, ty, wiki.get(i), i == 0 ? wm.color() : Ui.TEXT);
+            ui.text(x + 12, ty, wiki.get(i), i < wcol.size() ? wcol.get(i) : i == 0 ? wm.color() : Ui.TEXT);
             ty += 10;
         }
         ctx.getMatrices().pop();

@@ -31,7 +31,13 @@ public final class WikiPairs {
      * si hay que cambiárselo pagando, el IV que pasa con su brazal, el estado y con quién se cría.
      */
     public record Mark(String crianzaId, String crianza, int color, int pair, boolean female, String brazal, String state,
-                       boolean genderChange, UUID partner, boolean genderless, List<String> notes) {
+                       boolean genderChange, UUID partner, boolean genderless, List<String> notes,
+                       String childGender, String next, String with) {
+        /** La cría de este cruce debe salir hembra («F»), macho («M») o es tu Pokémon final («»). */
+        public boolean childFinal() {
+            return childGender == null || childGender.isBlank();
+        }
+
         /** Texto corto de la insignia: «C1» pareja, «C·» reservado, «C?» opción que tú decides en la wiki. */
         public String label() {
             String ini = crianza == null || crianza.isBlank() ? "C" : crianza.substring(0, 1).toUpperCase(Locale.ROOT);
@@ -141,8 +147,9 @@ public final class WikiPairs {
                 boolean fa = "F".equals(str(p, "ga", "M")), fb = !"M".equals(str(p, "gb", "F"));
                 boolean ca = p.has("ca") ? p.get("ca").getAsBoolean() : change.contains(a);
                 boolean cb = p.has("cb") ? p.get("cb").getAsBoolean() : change.contains(b);
-                if (a != null) marks.putIfAbsent(a, new Mark(id, name, color, n, fa, str(p, "bra", ""), state, ca, b, p.has("xa") && p.get("xa").getAsBoolean(), notes));
-                if (b != null) marks.putIfAbsent(b, new Mark(id, name, color, n, fb, str(p, "brb", ""), state, cb, a, p.has("xb") && p.get("xb").getAsBoolean(), notes));
+                String hg = str(p, "hg", ""), sig = str(p, "sig", "");
+                if (a != null) marks.putIfAbsent(a, new Mark(id, name, color, n, fa, str(p, "bra", ""), state, ca, b, p.has("xa") && p.get("xa").getAsBoolean(), notes, hg, sig, ""));
+                if (b != null) marks.putIfAbsent(b, new Mark(id, name, color, n, fb, str(p, "brb", ""), state, cb, a, p.has("xb") && p.get("xb").getAsBoolean(), notes, hg, sig, ""));
                 if (a != null || b != null) slots.put(slots.containsKey(n) ? sueltos++ : n, new UUID[]{a, b});
             }
             // Reservados: esperan una cría (o su pareja no está en tu PC). Van en su lado, con el otro lugar vacío
@@ -153,7 +160,7 @@ public final class WikiPairs {
                 int n = r.has("n") ? r.get("n").getAsInt() : 0;
                 boolean f = "F".equals(str(r, "g", "M"));
                 marks.putIfAbsent(u, new Mark(id, name, color, n, f, str(r, "br", ""), str(r, "estado", "reservado"), false, null,
-                        r.has("x") && r.get("x").getAsBoolean(), notes(r)));
+                        r.has("x") && r.get("x").getAsBoolean(), notes(r), str(r, "hg", ""), str(r, "sig", ""), str(r, "con", "")));
                 int k = n > 0 && !slots.containsKey(n) ? n : sueltos++;
                 slots.put(k, f ? new UUID[]{null, u} : new UUID[]{u, null});
             }
@@ -163,7 +170,7 @@ public final class WikiPairs {
             if (c.has("opciones")) for (JsonElement oe : c.getAsJsonArray("opciones")) {
                 JsonObject o = oe.getAsJsonObject();
                 UUID u = uuid(str(o, "u", ""));
-                if (u != null) marks.putIfAbsent(u, new Mark(id, name, OPTION_COLOR, -1, false, str(o, "paso", ""), "opcion", false, null, false, List.of()));
+                if (u != null) marks.putIfAbsent(u, new Mark(id, name, OPTION_COLOR, -1, false, str(o, "paso", ""), "opcion", false, null, false, List.of(), "", "", ""));
             }
             list.add(new Crianza(id, name, color, Collections.unmodifiableList(ordered)));
         }

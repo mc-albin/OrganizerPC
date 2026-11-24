@@ -121,7 +121,8 @@ public final class PartyNameplates {
             matrices.scale(0.025F * scale, -0.025F * scale, scale);
             Matrix4f m = matrices.peek().getPositionMatrix();
             float x = -tr.getWidth(sign) / 2F;
-            tr.draw(sign, x, -13, 0xFFFFFFFF, false, m, consumers, TextRenderer.TextLayerType.SEE_THROUGH, 0xC0101215, full);
+            // A través de paredes solo se ve tenue (sin colores); delante, con sus colores
+            tr.draw(sign.getString(), x, -13, 0x30FFFFFF, false, m, consumers, TextRenderer.TextLayerType.SEE_THROUGH, 0xC0101215, full);
             tr.draw(sign, x, -13, 0xFFFFFFFF, false, m, consumers, TextRenderer.TextLayerType.NORMAL, 0, full);
             matrices.pop();
 
@@ -139,16 +140,21 @@ public final class PartyNameplates {
         }
     }
 
-    /** «C4 · ♀ HEMBRA · pasa 0 VEL» (o «· espera cría» / «· falta pareja» si todavía no puede criar). */
+    /** «C1 · CRÍA MACHO» (lo que debe salir de este cruce), o «· espera» / «· falta pareja» si todavía no puede criar. */
     static Text sign(com.diosesmon.organizerpc.core.WikiPairs.Mark mark) {
-        var out = Text.literal(mark.label() + " ").withColor(mark.color() & 0xFFFFFF);
-        int gc = mark.female() ? 0xFF77B4 : 0x5DADEC;
-        String g = mark.female() ? "♀ HEMBRA" : "♂ MACHO";
-        if (mark.genderless()) out.append(Text.literal("SIN SEXO: ponle " + g).withColor(gc));
-        else out.append(Text.literal(g).withColor(gc));
-        if ("reservado".equals(mark.state())) out.append(Text.literal(" · espera cría").withColor(0xB8BCC6));
+        var out = Text.literal(mark.label() + " · ").withColor(mark.color() & 0xFFFFFF);
+        if (mark.childGender().isBlank() && mark.next().isBlank()) {
+            // Datos viejos de la wiki (sin el sexo de la cría): el sexo de este Pokémon
+            out.append(Text.literal(mark.female() ? "HEMBRA" : "MACHO").withColor(mark.female() ? 0xFF77B4 : 0x5DADEC));
+        } else if (mark.childFinal()) {
+            out.append(Text.literal("CRÍA FINAL").withColor(0xFFD25A));
+        } else {
+            boolean f = "F".equals(mark.childGender());
+            out.append(Text.literal("CRÍA " + (f ? "HEMBRA" : "MACHO")).withColor(f ? 0xFF77B4 : 0x5DADEC));
+        }
+        if (mark.genderless()) out.append(Text.literal(" · ponle " + (mark.female() ? "hembra" : "macho")).withColor(0xFFFFFF));
+        if ("reservado".equals(mark.state())) out.append(Text.literal(" · espera").withColor(0xB8BCC6));
         else if ("falta".equals(mark.state())) out.append(Text.literal(" · falta pareja").withColor(0xFF6B6B));
-        if (!mark.brazal().isBlank()) out.append(Text.literal(" · pasa " + mark.brazal()).withColor(0xFFFFFF));
         return out;
     }
 }
