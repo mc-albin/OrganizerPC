@@ -62,6 +62,7 @@ final class EggHover {
             // Macho con hembra siempre: solo a un sin sexo hay que ponerle el sexo
             wiki.add(wm.genderless() ? "Sin sexo: ponle " + (wm.female() ? "hembra" : "macho · se paga") : "Va como " + (wm.female() ? "hembra" : "macho"));
             if (!wm.brazal().isBlank()) wiki.add("Brazal: pasa " + wm.brazal());
+            wiki.addAll(wm.notes());   // con qué cría se junta, qué sale y a dónde va
             if (wm.pair() > 0) wiki.add("Estado: " + wm.stateLabel());
             }
         }

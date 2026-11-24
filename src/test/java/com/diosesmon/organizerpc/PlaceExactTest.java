@@ -51,8 +51,8 @@ class PlaceExactTest {
         assertEquals(new Pos(1, 1), after.positionOf(pairs.get(0).get(1)));
         assertEquals(new Pos(1, 6), after.positionOf(pairs.get(1).get(0)));   // C2: fila 2
         assertEquals(new Pos(1, 24), after.positionOf(pairs.get(4).get(0)));  // C5: fila 5
-        assertEquals(new Pos(1, 2), after.positionOf(pairs.get(5).get(0)));   // C6: fila 1, columnas 3-4
-        assertEquals(new Pos(1, 15), after.positionOf(pairs.get(7).get(1)));  // C8 hembra: fila 3, columna 4
+        assertEquals(new Pos(1, 4), after.positionOf(pairs.get(5).get(0)));   // C6: fila 1, columnas 5-6 (3-4 vacías)
+        assertEquals(new Pos(1, 17), after.positionOf(pairs.get(7).get(1)));  // C8 hembra: fila 3, columna 6
     }
 
     @Test

@@ -425,19 +425,28 @@ public final class Planner {
     }
 
     /**
-     * Cajas de crianza por parejas: cada pareja en una fila (macho en la columna 1, hembra en la 2), de arriba abajo;
-     * con 5 filas llenas sigue en las columnas 3-4 y después en la 5-6. Así quedan en orden: C1, C2, C3…
-     * Cada pareja tiene 2 lugares (un lugar puede ser null). Las que no caben en las cajas van a noSpace.
+     * Cajas de crianza por cruces, en el orden en que se crían: cada cruce en una fila (macho en la columna 1, hembra en la 2),
+     * de arriba abajo; con 5 filas llenas sigue en las columnas 5-6. Las columnas 3-4 quedan vacías para separar.
+     * Cada cruce tiene 2 lugares; un lugar null queda vacío (ahí va la cría que falta). Los cruces sin ningún Pokémon
+     * en la PC no ocupan fila. Los que no caben en las cajas van a noSpace.
      */
     public static Plan placePairs(PcModel original, List<List<UUID>> pairs, List<Integer> boxes, Set<Integer> locked) {
         List<Integer> targets = new ArrayList<>();
         for (int b : boxes) if (b >= 0 && b < original.boxCount() && !locked.contains(b) && !targets.contains(b)) targets.add(b);
-        int perBox = PcModel.SLOTS_PER_BOX / 2, rows = PcModel.SLOTS_PER_BOX / 6;
+        int rows = PcModel.SLOTS_PER_BOX / 6, perBox = rows * 2;
         List<UUID> members = new ArrayList<>();
         List<Pos> pos = new ArrayList<>();
-        for (int k = 0; k < pairs.size(); k++) {
+        int k = -1;
+        for (List<UUID> two : pairs) {
+            boolean here = false;
+            for (UUID u : two) {
+                Pos at = u == null ? null : original.positionOf(u);
+                if (at != null && !locked.contains(at.box())) here = true;
+            }
+            if (!here) continue;
+            k++;
             for (int side = 0; side < 2; side++) {
-                UUID u = side < pairs.get(k).size() ? pairs.get(k).get(side) : null;
+                UUID u = side < two.size() ? two.get(side) : null;
                 if (u == null || members.contains(u)) continue;
                 members.add(u);
                 if (k >= targets.size() * perBox) {
@@ -445,7 +454,7 @@ public final class Planner {
                     continue;
                 }
                 int box = targets.get(k / perBox), j = k % perBox, block = j / rows, row = j % rows;
-                pos.add(new Pos(box, row * 6 + block * 2 + side));
+                pos.add(new Pos(box, row * 6 + block * 4 + side));
             }
         }
         return placeAt(original, members, pos, locked);

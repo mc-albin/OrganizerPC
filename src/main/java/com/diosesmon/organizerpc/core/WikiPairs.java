@@ -31,7 +31,7 @@ public final class WikiPairs {
      * si hay que cambiárselo pagando, el IV que pasa con su brazal, el estado y con quién se cría.
      */
     public record Mark(String crianzaId, String crianza, int color, int pair, boolean female, String brazal, String state,
-                       boolean genderChange, UUID partner, boolean genderless) {
+                       boolean genderChange, UUID partner, boolean genderless, List<String> notes) {
         /** Texto corto de la insignia: «C1» pareja, «C·» reservado, «C?» opción que tú decides en la wiki. */
         public String label() {
             String ini = crianza == null || crianza.isBlank() ? "C" : crianza.substring(0, 1).toUpperCase(Locale.ROOT);
@@ -51,14 +51,18 @@ public final class WikiPairs {
                 case "incompleta" -> "Falta su pareja";
                 case "evolucionar" -> "Evoluciona la cría";
                 case "reservado" -> "Espera una cría";
+                case "falta" -> "Falta su pareja";
                 case "opcion" -> "Opción: tú decides en la wiki";
                 default -> state == null ? "" : state;
             };
         }
     }
 
-    /** Una crianza con sus parejas en orden (para las cajas de crianza): cada pareja, macho y hembra. */
-    public record Crianza(String id, String name, int color, List<List<UUID>> pairs, List<UUID> reserved) {
+    /**
+     * Una crianza con sus cruces en el orden en que se crían (C1, C2…): cada uno con 2 lugares, macho y hembra.
+     * Un cruce que espera una cría (o le falta la pareja) tiene un lugar vacío (null): ahí va la cría cuando nazca.
+     */
+    public record Crianza(String id, String name, int color, List<List<UUID>> slots) {
     }
 
     public static final WikiPairs EMPTY = new WikiPairs(Map.of(), List.of());
@@ -93,25 +97,12 @@ public final class WikiPairs {
     }
 
     /**
-     * Parejas para las cajas de crianza, en orden: las de cada crianza y después sus reservados, de dos en dos.
-     * Cada elemento tiene 2 lugares (macho, hembra); un lugar puede ser null.
+     * Cruces para las cajas de crianza, crianza por crianza y en el orden en que se crían.
+     * Cada elemento tiene 2 lugares (macho, hembra); un lugar puede ser null (la cría que falta o la pareja que no tienes).
      */
     public List<List<UUID>> slotPairs() {
         List<List<UUID>> out = new ArrayList<>();
-        for (Crianza c : crianzas) {
-            for (List<UUID> p : c.pairs()) {
-                List<UUID> two = new ArrayList<>(2);
-                two.add(p.size() > 0 ? p.get(0) : null);
-                two.add(p.size() > 1 ? p.get(1) : null);
-                out.add(two);
-            }
-            for (int i = 0; i < c.reserved().size(); i += 2) {
-                List<UUID> two = new ArrayList<>(2);
-                two.add(c.reserved().get(i));
-                two.add(i + 1 < c.reserved().size() ? c.reserved().get(i + 1) : null);
-                out.add(two);
-            }
-        }
+        for (Crianza c : crianzas) out.addAll(c.slots());
         return out;
     }
 
@@ -128,10 +119,13 @@ public final class WikiPairs {
             String name = str(c, "nombre", "Crianza");
             int color = color(str(c, "color", ""), BreedingPair.COLORS[idx % BreedingPair.COLORS.length]);
             idx++;
-            List<List<UUID>> pairs = new ArrayList<>();
+            // Cruces por número: los listos y los que esperan una cría van juntos, en el orden en que se crían
+            java.util.TreeMap<Integer, UUID[]> slots = new java.util.TreeMap<>();
+            int sueltos = 100000;
             if (c.has("pares")) for (JsonElement pe : c.getAsJsonArray("pares")) {
                 JsonObject p = pe.getAsJsonObject();
-                int n = p.has("n") ? p.get("n").getAsInt() : pairs.size() + 1;
+                int n = p.has("n") ? p.get("n").getAsInt() : slots.size() + 1;
+                List<String> notes = notes(p);
                 String state = str(p, "estado", "lista");
                 List<UUID> change = new ArrayList<>();
                 if (p.has("cambio")) for (JsonElement x : p.getAsJsonArray("cambio")) {
@@ -142,34 +136,41 @@ public final class WikiPairs {
                 boolean fa = "F".equals(str(p, "ga", "M")), fb = !"M".equals(str(p, "gb", "F"));
                 boolean ca = p.has("ca") ? p.get("ca").getAsBoolean() : change.contains(a);
                 boolean cb = p.has("cb") ? p.get("cb").getAsBoolean() : change.contains(b);
-                List<UUID> pair = new ArrayList<>(2);
-                if (a != null) {
-                    pair.add(a);
-                    marks.putIfAbsent(a, new Mark(id, name, color, n, fa, str(p, "bra", ""), state, ca, b, p.has("xa") && p.get("xa").getAsBoolean()));
-                }
-                if (b != null) {
-                    pair.add(b);
-                    marks.putIfAbsent(b, new Mark(id, name, color, n, fb, str(p, "brb", ""), state, cb, a, p.has("xb") && p.get("xb").getAsBoolean()));
-                }
-                pairs.add(Collections.unmodifiableList(pair));
+                if (a != null) marks.putIfAbsent(a, new Mark(id, name, color, n, fa, str(p, "bra", ""), state, ca, b, p.has("xa") && p.get("xa").getAsBoolean(), notes));
+                if (b != null) marks.putIfAbsent(b, new Mark(id, name, color, n, fb, str(p, "brb", ""), state, cb, a, p.has("xb") && p.get("xb").getAsBoolean(), notes));
+                if (a != null || b != null) slots.put(slots.containsKey(n) ? sueltos++ : n, new UUID[]{a, b});
             }
-            List<UUID> reserved = new ArrayList<>();
+            // Reservados: esperan una cría (o su pareja no está en tu PC). Van en su lado, con el otro lugar vacío
             if (c.has("reservados")) for (JsonElement re : c.getAsJsonArray("reservados")) {
                 JsonObject r = re.getAsJsonObject();
                 UUID u = uuid(str(r, "u", ""));
                 if (u == null) continue;
-                reserved.add(u);
-                marks.putIfAbsent(u, new Mark(id, name, color, 0, "F".equals(str(r, "g", "M")), str(r, "br", ""), "reservado", false, null, false));
+                int n = r.has("n") ? r.get("n").getAsInt() : 0;
+                boolean f = "F".equals(str(r, "g", "M"));
+                marks.putIfAbsent(u, new Mark(id, name, color, n, f, str(r, "br", ""), str(r, "estado", "reservado"), false, null,
+                        r.has("x") && r.get("x").getAsBoolean(), notes(r)));
+                int k = n > 0 && !slots.containsKey(n) ? n : sueltos++;
+                slots.put(k, f ? new UUID[]{null, u} : new UUID[]{u, null});
             }
+            List<List<UUID>> ordered = new ArrayList<>();
+            for (UUID[] two : slots.values()) ordered.add(Collections.unmodifiableList(java.util.Arrays.asList(two)));
             // Opciones: no van a las cajas de crianza; en brazal se guarda el paso que podría reemplazar
             if (c.has("opciones")) for (JsonElement oe : c.getAsJsonArray("opciones")) {
                 JsonObject o = oe.getAsJsonObject();
                 UUID u = uuid(str(o, "u", ""));
-                if (u != null) marks.putIfAbsent(u, new Mark(id, name, OPTION_COLOR, -1, false, str(o, "paso", ""), "opcion", false, null, false));
+                if (u != null) marks.putIfAbsent(u, new Mark(id, name, OPTION_COLOR, -1, false, str(o, "paso", ""), "opcion", false, null, false, List.of()));
             }
-            list.add(new Crianza(id, name, color, Collections.unmodifiableList(pairs), Collections.unmodifiableList(reserved)));
+            list.add(new Crianza(id, name, color, Collections.unmodifiableList(ordered)));
         }
         return new WikiPairs(Collections.unmodifiableMap(marks), Collections.unmodifiableList(list));
+    }
+
+    /** Líneas que explica la wiki: con qué cría se junta, qué sale del cruce y a dónde va después. */
+    private static List<String> notes(JsonObject o) {
+        List<String> out = new ArrayList<>();
+        if (o.has("notas") && o.get("notas").isJsonArray())
+            for (JsonElement e : o.getAsJsonArray("notas")) if (e.isJsonPrimitive()) out.add(e.getAsString());
+        return Collections.unmodifiableList(out);
     }
 
     private static String str(JsonObject o, String k, String def) {

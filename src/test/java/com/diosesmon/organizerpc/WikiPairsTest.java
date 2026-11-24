@@ -30,6 +30,18 @@ class WikiPairsTest {
     }
 
     @Test
+    void reservedGoInOrderWithAnEmptySlot() {
+        UUID x = UUID.fromString("00000000-0000-0000-0000-00000000000e");
+        WikiPairs w = WikiPairs.parse("{\"crianzas\":[{\"id\":\"a\",\"nombre\":\"Clefairy\","
+                + "\"pares\":[{\"n\":1,\"a\":\"" + A + "\",\"b\":\"" + B + "\"},{\"n\":3,\"a\":\"" + x + "\"}],"
+                + "\"reservados\":[{\"u\":\"" + R + "\",\"n\":2,\"g\":\"F\",\"notas\":[\"Cría con la cría de C1\"]}]}]}");
+        assertEquals("C2", w.markOf(R).label());
+        assertEquals(List.of("Cría con la cría de C1"), w.markOf(R).notes());
+        assertEquals(java.util.Arrays.asList(null, R), w.slotPairs().get(1));   // hembra: el lugar del macho queda para la cría
+        assertEquals(List.of(A, B, R, x), w.orderedMembers());
+    }
+
+    @Test
     void optionsAreMarkedButNotMoved() {
         UUID o = UUID.fromString("00000000-0000-0000-0000-00000000000d");
         WikiPairs w = WikiPairs.parse("{\"crianzas\":[{\"id\":\"a\",\"nombre\":\"Clefairy\",\"pares\":[],\"opciones\":[{\"u\":\"" + o + "\",\"paso\":\"31 PS\"}]}]}");
