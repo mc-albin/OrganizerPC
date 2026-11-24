@@ -128,13 +128,13 @@ final class PreviewOverlay {
     /** Explicación corta de por qué se mueve. */
     static String reason(Plan.Entry e) {
         return switch (e.reason()) {
-            case CATEGORY -> "Cumple «" + e.categoryName() + "» y va a su caja";
+            case CATEGORY -> "Cumple " + e.categoryName() + " y va a su caja";
             case EVICTED -> (e.leftCategoryName() == null ? "No cumple la categoría de su caja"
-                    : "No cumple «" + e.leftCategoryName() + "», la categoría de su caja")
+                    : "No cumple " + e.leftCategoryName() + ", la categoría de su caja")
                     + ": sale a la primera caja libre sin categoría";
             case UNSORTED_BOX -> "No cumple ninguna categoría: va a la caja elegida en Ajustes";
             case SORTED -> e.categoryName() == null ? "Se coloca seguido y en orden, sin dejar huecos"
-                    : "Ya está en «" + e.categoryName() + "»: cambia de hueco para quedar ordenado";
+                    : "Ya está en " + e.categoryName() + ": cambia de hueco para quedar ordenado";
             case SWAPPED -> "Cambia de sitio para hacer hueco";
             case MANUAL -> "Movido desde la ventana Mover";
         };

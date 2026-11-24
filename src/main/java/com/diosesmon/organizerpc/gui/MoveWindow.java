@@ -93,7 +93,7 @@ final class MoveWindow {
                     if (!PanelState.moveFilters.remove(c.id)) PanelState.moveFilters.add(c.id);
                     p.applyMoveFilters();
                 }
-                ui.tooltip(fx, ry, chw, 11, "Marca en toda la PC los que cumplen «" + c.name + "».",
+                ui.tooltip(fx, ry, chw, 11, "Marca en toda la PC los que cumplen " + c.name + ".",
                         "Con varios filtros se marcan los que cumplan alguno.", "(Sin cajas bloqueadas.)");
                 fx += chw + 2;
             }

@@ -113,7 +113,7 @@ final class Guide {
         if (PanelState.editing == null) {
             // Pulsó «Listo» en el editor: categoría guardada.
             close();
-            PanelState.status("¡Categoría lista! Pulsa «Organizar PC» para colocar los Pokémon.", Ui.GREEN);
+            PanelState.status("¡Categoría lista! Pulsa Organizar PC para colocar los Pokémon.", Ui.GREEN);
             return;
         }
         step(p, ui, s);
@@ -183,16 +183,16 @@ final class Guide {
         Category c = PanelState.editing;
         return switch (s) {
             case 1 -> new String[]{"Nombre",
-                    "Escribe aquí el nombre de tu categoría (por ejemplo «5x31 Campo»). El cuadrado de la derecha cambia su color."};
+                    "Escribe aquí el nombre de tu categoría (por ejemplo 5x31 Campo). El cuadrado de la derecha cambia su color."};
             case 2 -> {
                 String n = "Ahora mismo cumplen " + p.matchCounts.getOrDefault(c.id, 0) + " Pokémon.";
                 yield switch (PanelState.guideKind) {
                     case IV_COUNT -> new String[]{"¿Cuántos 31?",
-                            "Toca cuántos IVs en 31 quieres (por ejemplo 5). Luego elige «Exactamente» o «o más». " + n};
+                            "Toca cuántos IVs en 31 quieres (por ejemplo 5). Luego elige Exactamente o o más. " + n};
                     case IV_STATS -> new String[]{"IVs concretos",
                             "Toca cada estadística para cambiarla: da igual → 31 → 0. Por ejemplo PS en 31 y Ataque en 0. " + n};
                     case EGG -> new String[]{"Grupo huevo",
-                            "Marca uno o varios grupos. «Alguno»: entra si tiene cualquiera. «Solo estos»: sin grupos de más. " + n};
+                            "Marca uno o varios grupos. Alguno: entra si tiene cualquiera. Solo estos: sin grupos de más. " + n};
                     case SPECIES -> new String[]{"Especie",
                             "Escribe el nombre en el buscador y pulsa + (solo esa) o + familia (con sus evoluciones). " + n};
                 };
@@ -203,7 +203,7 @@ final class Guide {
             case 4 -> new String[]{"Orden (opcional)",
                     "Cómo se ordenan dentro de sus cajas: por IVs, por grupo huevo… El 1º manda y el 2º desempata."};
             default -> new String[]{"¡Listo!",
-                    "Pulsa Listo para guardarla. Después «Organizar PC» los coloca en sus cajas (antes verás la vista previa)."};
+                    "Pulsa Listo para guardarla. Después Organizar PC los coloca en sus cajas (antes verás la vista previa)."};
         };
     }
 
@@ -243,7 +243,7 @@ final class Guide {
             if (last) {
                 p.finishEditing();
                 close();
-                PanelState.status("¡Categoría lista! Pulsa «Organizar PC» para colocar los Pokémon.", Ui.GREEN);
+                PanelState.status("¡Categoría lista! Pulsa Organizar PC para colocar los Pokémon.", Ui.GREEN);
             } else {
                 go(p, s + 1);
             }

@@ -903,7 +903,7 @@ public final class OrganizerPanel {
             }
         }
         if (usable == 0 && c.unsortedMode == OrganizerConfig.UnsortedMode.KEEP) {
-            if (noBoxes != null) PanelState.status("«" + noBoxes + "» no tiene cajas. Elígelas en la categoría.", Ui.GOLD);
+            if (noBoxes != null) PanelState.status(noBoxes + " no tiene cajas. Elígelas en la categoría.", Ui.GOLD);
             else PanelState.status("Primero crea una categoría.", Ui.GOLD);
             return;
         }
@@ -1092,7 +1092,7 @@ public final class OrganizerPanel {
             case CAPTURE -> "a las cajas de captura";
             case CATEGORY -> {
                 Category c = categoryById(PanelState.moveCategoryId);
-                yield c == null ? "a su categoría" : "a «" + c.name + "»";
+                yield c == null ? "a su categoría" : "a " + c.name + "";
             }
         };
     }
@@ -1180,7 +1180,7 @@ public final class OrganizerPanel {
                 if (u != null && c.matches(snapshot.info(u)) && PanelState.selection.add(u)) n++;
             }
         }
-        PanelState.status(n + " marcados de «" + c.name + "».", Ui.TEXT_DIM);
+        PanelState.status(n + " marcados de " + c.name + ".", Ui.TEXT_DIM);
     }
 
     void toggleSelection(UUID uuid) {
@@ -1310,7 +1310,7 @@ public final class OrganizerPanel {
         }
         PanelState.settingsOpen = false;
         PanelState.confirm = new PanelState.Confirm("Poner nombre a las cajas",
-                "Cada caja de una categoría pasará a llamarse como ella (por ejemplo «6x31»). Son " + n + " cajas. No mueve Pokémon.",
+                "Cada caja de una categoría pasará a llamarse como ella (por ejemplo 6x31). Son " + n + " cajas. No mueve Pokémon.",
                 "Renombrar", this::renameBoxes);
     }
 

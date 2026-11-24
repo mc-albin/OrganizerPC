@@ -31,7 +31,7 @@ final class TopBar {
         } else if (PanelState.stripMode == PanelState.StripMode.ASSIGN && PanelState.editing != null) {
             Category c = PanelState.editing;
             ui.round(rx, ry + 5, 8, 8, c.color);
-            modeRow(ui, rx, ry, rw, "Elige las cajas de «" + c.name + "»");
+            modeRow(ui, rx, ry, rw, "Elige las cajas de " + c.name + "");
         } else if (PanelState.stripMode == PanelState.StripMode.BREED) {
             breedRow(p, ui, rx, ry, rw);
         } else if (PanelState.stripMode == PanelState.StripMode.LOCK) {
@@ -64,7 +64,7 @@ final class TopBar {
         for (var cr : com.diosesmon.organizerpc.cobblemon.WikiSync.pairs().crianzas()) if (cr.id().equals(id)) { name = cr.name(); col = cr.color(); }
         ui.round(x, y + 5, 8, 8, col);
         int n = p.cfg().boxesFor(id).size();
-        String t = (name == null ? "Toca las cajas generales de crianza" : "Toca las cajas de «" + name + "»") + " · " + n + (n == 1 ? " caja" : " cajas");
+        String t = (name == null ? "Toca las cajas generales de crianza" : "Toca las cajas de " + name + "") + " · " + n + (n == 1 ? " caja" : " cajas");
         ui.textTrim(x + 13, y + 5, w - 80, t, Ui.TEXT);
         if (ui.button(x + w - 60, y, 60, H, "Listo", Ui.Style.PRIMARY)) {
             PanelState.stripMode = PanelState.StripMode.NAVIGATE;
@@ -218,7 +218,7 @@ final class TopBar {
             tip.add("· Grupo huevo: campo, hada, agua 1, dragón…");
             tip.add("· IV: ps31, ata31, def0, vel31… · nº de 31: 3x31");
             tip.add("· Nº Pokédex: 25, #150 o un rango 1-151");
-            tip.add("Se combinan: «campo vel31» = Campo con 31 en Vel");
+            tip.add("Se combinan: campo vel31 = Campo con 31 en Vel");
         }
         if (!(ui.hover(x + w - clearW - 2, y + 4, clearW, 10) && active)) ui.tooltipLines(x, y, w - cw - clearW, H, tip);
     }
@@ -277,7 +277,7 @@ final class TopBar {
             PanelState.stripMode = capOn ? PanelState.StripMode.NAVIGATE : PanelState.StripMode.CAPTURE;
         }
         ui.tooltip(r[0], r[1], 16, 16, "Cajas de captura",
-                "Donde guardas los Pokémon nuevos. «Capturas» los reparte",
+                "Donde guardas los Pokémon nuevos. Capturas los reparte",
                 "en tus categorías y estas cajas nunca reciben Pokémon.");
 
         r = modeRect(p, 2);
@@ -447,7 +447,7 @@ final class TopBar {
                 case LOCK -> "Click: " + (locked ? "desbloquear" : "bloquear");
                 case CAPTURE -> "Click: " + (capture ? "quitar de captura" : "marcar como captura");
                 case ARRANGE -> "Click: " + (arrangeIdx >= 0 ? "quitar de" : "añadir a") + " las cajas a ordenar";
-                case ASSIGN -> editing == null ? "" : "Click: " + (mine ? "quitar de" : "añadir a") + " «" + editing.name + "»";
+                case ASSIGN -> editing == null ? "" : "Click: " + (mine ? "quitar de" : "añadir a") + " " + editing.name + "";
                 case BREED -> "Click: " + (breedMine ? "quitar de" : "añadir a") + " las cajas de esta crianza";
             });
             ui.tooltipLines(cx, cy, cw, ch, tip);

@@ -67,8 +67,7 @@ final class CreatorBox {
             poll();
             draw(p, ui, ui.hover(v[0], v[1], v[2], v[3]));
         }
-        ui.tooltip(v[0], v[1], v[2], v[3], "Creador del mod iAlbin73",
-                live ? "¡Está en vivo en Twitch!" : "No está en vivo ahora.", "", "Click: abrir twitch.tv/" + CHANNEL);
+        ui.tooltipText(v[0], v[1], v[2], v[3], tip());
         if (ui.area(v[0], v[1], v[2], v[3])) {
             try {
                 net.minecraft.util.Util.getOperatingSystem().open(URI.create("https://www.twitch.tv/" + CHANNEL));
@@ -76,6 +75,35 @@ final class CreatorBox {
                 // Sin navegador: no pasa nada.
             }
         }
+    }
+
+    private static final int PURPLE = 0xB98CFF, RED = 0xFF4D4D;
+
+    /** Tooltip con colores: el nombre en degradado verde → morado, el estado en rojo o gris y el canal en morado Twitch. */
+    private static java.util.List<net.minecraft.text.Text> tip() {
+        var name = net.minecraft.text.Text.empty();
+        String n = "iAlbin73";
+        int[] from = {0x5DFF8A}, to = {PURPLE};
+        for (int i = 0; i < n.length(); i++) {
+            float t = i / (float) (n.length() - 1);
+            name.append(net.minecraft.text.Text.literal(String.valueOf(n.charAt(i)))
+                    .setStyle(net.minecraft.text.Style.EMPTY.withBold(true).withColor(lerp(from[0], to[0], t))));
+        }
+        java.util.List<net.minecraft.text.Text> l = new java.util.ArrayList<>();
+        l.add(net.minecraft.text.Text.literal("Creador del mod ").withColor(0xE6E8EC).append(name));
+        l.add(live ? net.minecraft.text.Text.literal("● EN VIVO en Twitch").setStyle(net.minecraft.text.Style.EMPTY.withBold(true).withColor(RED))
+                : net.minecraft.text.Text.literal("● No está en vivo ahora").withColor(0x8A8F98));
+        l.add(net.minecraft.text.Text.empty());
+        l.add(net.minecraft.text.Text.literal("twitch.tv/" + CHANNEL).withColor(PURPLE));
+        l.add(net.minecraft.text.Text.literal("Click para abrir su canal").withColor(0x8A8F98));
+        return l;
+    }
+
+    private static int lerp(int a, int b, float t) {
+        int r = (int) (((a >> 16) & 0xFF) * (1 - t) + ((b >> 16) & 0xFF) * t);
+        int g = (int) (((a >> 8) & 0xFF) * (1 - t) + ((b >> 8) & 0xFF) * t);
+        int bl = (int) ((a & 0xFF) * (1 - t) + (b & 0xFF) * t);
+        return (r << 16) | (g << 8) | bl;
     }
 
     /** Dibuja en píxeles de pantalla: deshace la escala del organizador y la de la GUI. */
@@ -87,7 +115,7 @@ final class CreatorBox {
         m.translate(r[0], r[1], 0F);
         float inv = (float) (1.0 / gs());
         m.scale(inv, inv, 1F);
-        int border = live ? 0xFFFF3B3B : hov ? 0xFFFFFFFF : 0xFF2A2E33;
+        int border = live ? 0xFFFF3B3B : hov ? 0xFFFFFFFF : 0xFF9146FF;
         ui.ctx.fill(0, 0, PX, PX, border);
         ui.ctx.fill(1, 1, PX - 1, PX - 1, 0xFF101215);
         ui.ctx.drawTexture(LOGO, 2, 2, 0, 0, PX - 4, PX - 4, PX - 4, PX - 4);

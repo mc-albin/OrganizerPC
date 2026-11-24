@@ -200,7 +200,7 @@ final class Search {
                 case StatTerm s -> "· " + s.stat().shortLabel + " en " + s.value();
                 case CountTerm c -> "· " + c.count() + "x31";
                 case GroupTerm g -> "· Grupo huevo " + String.join(" o ", g.groups().stream().map(k -> k.label).toList());
-                case NameTerm n -> "· Nombre contiene «" + n.text() + "»";
+                case NameTerm n -> "· Nombre contiene " + n.text() + "";
                 case DexTerm d -> d.from() == d.to() ? "· Pokédex nº " + d.from() : "· Pokédex del " + d.from() + " al " + d.to();
                 case GenderTerm g -> "· " + genderLabel(g.gender());
                 case ShinyTerm s -> "· Shiny";
@@ -375,7 +375,7 @@ final class Search {
         if (ui.chip(x + w - 6 - 2 * mw - 2, ry - 2, mw, 10, "Alguno", !eggOnly, Ui.BLUE)) eggOnly = false;
         ui.tooltip(x + w - 6 - 2 * mw - 2, ry - 2, mw, 10, "Entra si es de alguno de los grupos marcados.");
         if (ui.chip(x + w - 6 - mw, ry - 2, mw, 10, "Solo estos", eggOnly, Ui.BLUE)) eggOnly = true;
-        ui.tooltip(x + w - 6 - mw, ry - 2, mw, 10, "Únicamente de esos grupos: con solo «Campo»,", "nada de Campo + Hada ni otros extra.");
+        ui.tooltip(x + w - 6 - mw, ry - 2, mw, 10, "Únicamente de esos grupos: con solo Campo,", "nada de Campo + Hada ni otros extra.");
         ry += 11;
         EggGroupKey[] gs = EggGroupKey.values();
         int gw = (iw - 4) / 3;

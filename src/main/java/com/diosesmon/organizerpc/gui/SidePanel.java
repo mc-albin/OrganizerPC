@@ -52,7 +52,7 @@ final class SidePanel {
             int[] t = p.sideTab();
             boolean hov = ui.hover(t[0], t[1], t[2], t[3]);
             ui.box(t[0], t[1], t[2] + 4, t[3], hov ? Ui.BTN_HOVER : Ui.BG, hov ? Ui.THEME : Ui.BORDER);
-            ui.textCenter(t[0] + t[2] / 2 + 1, t[1] + t[3] / 2 - 4, "«", hov ? Ui.TEXT : Ui.TEXT_DIM);
+            ui.textCenter(t[0] + t[2] / 2 + 1, t[1] + t[3] / 2 - 4, "", hov ? Ui.TEXT : Ui.TEXT_DIM);
             ui.tooltip(t[0], t[1], t[2], t[3], "Mostrar el panel", "(Categorías y Mover)");
             if (ui.area(t[0], t[1], t[2], t[3])) {
                 p.cfg().sidePanelCollapsed = false;
@@ -85,7 +85,7 @@ final class SidePanel {
             boolean th = ui.hover(t[0], t[1], t[2], t[3]);
             ui.box(t[0], t[1], t[2] + 3, t[3], th ? Ui.BTN_HOVER : Ui.BG, th ? Ui.THEME : Ui.BORDER);
             ui.rect(t[0] + 2, t[1] + 1, 1, t[3] - 2, Ui.alpha(Ui.THEME, th ? 0xFF : 0x90));
-            ui.textCenter(t[0] + t[2] / 2 + 2, t[1] + t[3] / 2 - 4, "»", th ? Ui.TEXT : Ui.TEXT_DIM);
+            ui.textCenter(t[0] + t[2] / 2 + 2, t[1] + t[3] / 2 - 4, "", th ? Ui.TEXT : Ui.TEXT_DIM);
             ui.tooltip(t[0], t[1], t[2], t[3], "Ocultar el panel", "Queda una pestañita en el borde derecho para volver.");
             if (ui.area(t[0], t[1], t[2], t[3])) {
                 p.cfg().sidePanelCollapsed = true;
@@ -256,7 +256,7 @@ final class SidePanel {
         }
         return switch (r) {
             case EVICTED -> arriving ? "Sacados de cajas de otra categoría"
-                    : (left == null ? "No cumplen la categoría de esta caja" : "No cumplen «" + left + "»");
+                    : (left == null ? "No cumplen la categoría de esta caja" : "No cumplen " + left + "");
             case UNSORTED_BOX -> "Sin categoría (Ajustes)";
             case CATEGORY -> arriving ? null : "Van a su categoría";
             default -> null;
@@ -623,7 +623,7 @@ final class SidePanel {
             String[][] tips = {
                     {"Entra si pertenece a alguno", "de los grupos marcados."},
                     {"Entra si pertenece a todos los", "marcados (puede tener otros)."},
-                    {"Entra solo si todos sus grupos están", "marcados: con solo «Campo», nada de", "Campo + Hada ni otros extra."}};
+                    {"Entra solo si todos sus grupos están", "marcados: con solo Campo, nada de", "Campo + Hada ni otros extra."}};
             for (int i = 0; i < 3; i++) {
                 int bx = lx + i * (tw + 3);
                 int bwid = i == 2 ? cw - 2 * (tw + 3) : tw;

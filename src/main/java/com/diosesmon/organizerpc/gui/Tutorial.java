@@ -27,7 +27,7 @@ final class Tutorial {
                     "Activa el candado y toca cajas: las bloqueadas no se tocan nunca, ningún Pokémon entra ni sale.",
                     p -> p.rLock),
             new Step(Icons.POKE_BALL, "Cajas de captura",
-                    "Marca las cajas donde guardas los Pokémon nuevos. El botón «Capturas» los reparte en tus categorías y esas cajas nunca reciben Pokémon.",
+                    "Marca las cajas donde guardas los Pokémon nuevos. El botón Capturas los reparte en tus categorías y esas cajas nunca reciben Pokémon.",
                     p -> p.rCapture),
             new Step(Icons.HIDE, "Ocultar",
                     "Esconde todo el organizador. Para volver, pulsa la Poké Ball que queda encima de la PC.",

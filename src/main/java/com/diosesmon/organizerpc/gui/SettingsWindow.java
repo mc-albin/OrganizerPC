@@ -164,7 +164,7 @@ final class SettingsWindow {
             c.captureSort2 = cs[1];
             save();
         }
-        ui.tooltip(lx, r - 9, iw, 8, "Se aplica al pulsar «Capturas» y al", "mover Pokémon hacia las cajas de captura.");
+        ui.tooltip(lx, r - 9, iw, 8, "Se aplica al pulsar Capturas y al", "mover Pokémon hacia las cajas de captura.");
         r += 22;
         if (ui.button(lx, r, iw, 16, "Ver el tutorial", Icons.BOOK, Ui.Style.NORMAL)) {
             close();
@@ -219,7 +219,7 @@ final class SettingsWindow {
             close();
             p.askRenameBoxes();
         }
-        ui.tooltip(lx, r, iw, 16, "Cada caja de una categoría pasa a llamarse", "como ella (p. ej. «6x31»). No mueve Pokémon.");
+        ui.tooltip(lx, r, iw, 16, "Cada caja de una categoría pasa a llamarse", "como ella (p. ej. 6x31). No mueve Pokémon.");
         r += 21;
         if (ui.button(lx, r, hw, 16, "Desbloquear todas (" + c.lockedBoxes.size() + ")", Ui.Style.NORMAL)) {
             c.lockedBoxes.clear();
@@ -259,7 +259,7 @@ final class SettingsWindow {
                 "y con grupo huevo.",
                 "",
                 "No cuentan los de cajas bloqueadas,",
-                "los marcados «No usar» ni los muy raros",
+                "los marcados No usar ni los muy raros",
                 "si los tienes apagados.");
         r += 14;
 
@@ -281,25 +281,25 @@ final class SettingsWindow {
         }
         r += 20;
 
-        if (ui.button(lx, r, hw, 16, "Marcar «No usar»", Ui.Style.NORMAL)) {
+        if (ui.button(lx, r, hw, 16, "Marcar No usar", Ui.Style.NORMAL)) {
             close();
             PanelState.pairMode = true;
             PanelState.stripMode = PanelState.StripMode.NAVIGATE;
             Pairs.selected();
-            PanelState.status("Elige «No usar» arriba y haz click en los Pokémon que la wiki no debe usar.", Ui.TEXT_DIM);
+            PanelState.status("Elige No usar arriba y haz click en los Pokémon que la wiki no debe usar.", Ui.TEXT_DIM);
         }
         ui.tooltip(lx, r, hw, 16,
                 "Marca Pokémon que la wiki nunca debe usar.",
-                "Se cierra esta ventana: elige «No usar» arriba",
+                "Se cierra esta ventana: elige No usar arriba",
                 "y haz click en cada Pokémon.");
         boolean any = !c.noWiki.isEmpty();
-        if (ui.button(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quitar «No usar»: " + c.noWiki.size() : "Sin marcas «No usar»",
+        if (ui.button(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quitar No usar: " + c.noWiki.size() : "Sin marcas No usar",
                 any ? Ui.Style.NORMAL : Ui.Style.GHOST) && any) {
             c.noWiki.clear();
             breedersChanged();
-            PanelState.status("Ya no hay Pokémon marcados «No usar».", Ui.TEXT_DIM);
+            PanelState.status("Ya no hay Pokémon marcados No usar.", Ui.TEXT_DIM);
         }
-        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quita la marca «No usar» de todos." : "Ningún Pokémon está marcado «No usar».");
+        ui.tooltip(lx + hw + 4, r, iw - hw - 4, 16, any ? "Quita la marca No usar de todos." : "Ningún Pokémon está marcado No usar.");
         r += 20;
 
         if (ui.button(lx, r, hw, 16, "Descargar .txt", Ui.Style.PRIMARY)) {
@@ -373,7 +373,7 @@ final class SettingsWindow {
         ui.tooltip(x0 + 16, r, w - 32, 16, sel.isEmpty()
                 ? new String[]{"Todas tus crianzas de la wiki.", "", "Cada una va a sus propias cajas.",
                 "Las que no tienen cajas propias", "van a las cajas generales.", "", "Con < y > eliges una sola."}
-                : new String[]{"Crianza «" + name + "» de la wiki.", "", "Tiene sus propias cajas: así no se",
+                : new String[]{"Crianza " + name + " de la wiki.", "", "Tiene sus propias cajas: así no se",
                 "mezcla con tus otras crianzas.", "", "Con < y > cambias de crianza."});
         r += 20;
 
@@ -401,7 +401,7 @@ final class SettingsWindow {
             if (general && bx + 50 < limit) ui.small(bx + 2, r + 5, "generales", Ui.TEXT_DIM);
         }
         ui.tooltip(x0, r, limit - x0, 16, shown.isEmpty()
-                ? new String[]{"Todavía no hay cajas para esta crianza.", "", "Pulsa «Elegir cajas» y tócalas", "en la barra de cajas."}
+                ? new String[]{"Todavía no hay cajas para esta crianza.", "", "Pulsa Elegir cajas y tócalas", "en la barra de cajas."}
                 : general
                 ? new String[]{"Esta crianza no tiene cajas propias:", "usa las generales.", "",
                 "Elige otras para que no se mezcle", "con tus otras crianzas."}
@@ -424,7 +424,7 @@ final class SettingsWindow {
         if (ui.button(lx, r, iw, 18, label, can ? Ui.Style.PRIMARY : Ui.Style.GHOST) && can) p.startBreedMove();
         ui.tooltip(lx, r, iw, 18, n == 0
                 ? new String[]{"Elige tus parejas en la wiki:", "Crianza → Parejas.", "", "Después vuelve aquí para moverlas."}
-                : !can ? new String[]{"Primero elige sus cajas", "con «Elegir cajas»."}
+                : !can ? new String[]{"Primero elige sus cajas", "con Elegir cajas."}
                 : new String[]{"Lleva las parejas a sus cajas:", "una pareja por fila, macho a la izquierda", "y hembra a la derecha, en orden C1, C2…", "",
                 "Antes ves la vista previa y confirmas."});
         return r + 22;

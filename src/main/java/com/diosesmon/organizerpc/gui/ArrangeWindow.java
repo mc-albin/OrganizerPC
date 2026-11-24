@@ -63,7 +63,7 @@ final class ArrangeWindow {
                         for (int b : k.boxes) if (!PanelState.arrangeBoxes.contains(b)) PanelState.arrangeBoxes.add(b);
                     }
                 }
-                ui.tooltip(fx, cy, chw, 11, "Las cajas de «" + c.name + "»", "Puedes elegir varias categorías.");
+                ui.tooltip(fx, cy, chw, 11, "Las cajas de " + c.name + "", "Puedes elegir varias categorías.");
                 fx += chw + 2;
             }
             p.listEnd(ui, "arrangeCats", lx, r, iw, lh, cy + 13 - top);
