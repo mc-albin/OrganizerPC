@@ -115,20 +115,25 @@ public final class PartyNameplates {
             matrices.multiply(dispatcher.getRotation());
             matrices.translate(0.0, yOff, -z);
 
-            Text sign = sign(mark);
+            // Solo el símbolo del sexo que debe salir la cría (♂ azul, ♀ rosa; ★ dorada si es la final), grande y con borde
+            String g = glyph(mark);
+            int gc = "★".equals(g) ? 0xFFFFD25A : "♀".equals(g) ? 0xFFFF77B4 : 0xFF5DADEC;
             TextRenderer tr = mc.textRenderer;
             matrices.push();
-            matrices.scale(0.025F * scale, -0.025F * scale, scale);
+            matrices.translate(0.0, (0.025F * scale) * 4F, 0.0);
+            matrices.scale(0.05F * scale, -0.05F * scale, scale);
             Matrix4f m = matrices.peek().getPositionMatrix();
-            float x = -tr.getWidth(sign) / 2F;
-            // A través de paredes solo se ve tenue (sin colores); delante, con sus colores
-            tr.draw(sign.getString(), x, -13, 0x30FFFFFF, false, m, consumers, TextRenderer.TextLayerType.SEE_THROUGH, 0xC0101215, full);
-            tr.draw(sign, x, -13, 0xFFFFFFFF, false, m, consumers, TextRenderer.TextLayerType.NORMAL, 0, full);
+            float x = -tr.getWidth(g) / 2F, gy = -8F;
+            tr.draw(g, x, gy, 0x40FFFFFF, false, m, consumers, TextRenderer.TextLayerType.SEE_THROUGH, 0, full);
+            for (int[] d : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}})
+                tr.draw(g, x + d[0] * 0.6F, gy + d[1] * 0.6F, 0xFF101215, false, m, consumers, TextRenderer.TextLayerType.NORMAL, 0, full);
+            matrices.translate(0, 0, -0.01F);
+            tr.draw(g, x, gy, gc, false, matrices.peek().getPositionMatrix(), consumers, TextRenderer.TextLayerType.NORMAL, 0, full);
             matrices.pop();
 
             if (stack != null && !stack.isEmpty()) {
                 // El brazal, girando sobre el cartel
-                matrices.translate(0.0, (0.025F * scale) * 15F + 0.12F * scale + MathHelper.sin(time / 10F) * 0.03F * scale, 0.0);
+                matrices.translate(0.0, (0.025F * scale) * 22F + 0.1F * scale + MathHelper.sin(time / 10F) * 0.03F * scale, 0.0);
                 matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(time * 4F));
                 matrices.scale(0.6F * scale, 0.6F * scale, 0.6F * scale);
                 mc.getItemRenderer().renderItem(stack, net.minecraft.client.render.model.json.ModelTransformationMode.GROUND,
@@ -140,21 +145,10 @@ public final class PartyNameplates {
         }
     }
 
-    /** «C1 · CRÍA MACHO» (lo que debe salir de este cruce), o «· espera» / «· falta pareja» si todavía no puede criar. */
-    static Text sign(com.diosesmon.organizerpc.core.WikiPairs.Mark mark) {
-        var out = Text.literal(mark.label() + " · ").withColor(mark.color() & 0xFFFFFF);
-        if (mark.childGender().isBlank() && mark.next().isBlank()) {
-            // Datos viejos de la wiki (sin el sexo de la cría): el sexo de este Pokémon
-            out.append(Text.literal(mark.female() ? "HEMBRA" : "MACHO").withColor(mark.female() ? 0xFF77B4 : 0x5DADEC));
-        } else if (mark.childFinal()) {
-            out.append(Text.literal("CRÍA FINAL").withColor(0xFFD25A));
-        } else {
-            boolean f = "F".equals(mark.childGender());
-            out.append(Text.literal("CRÍA " + (f ? "HEMBRA" : "MACHO")).withColor(f ? 0xFF77B4 : 0x5DADEC));
-        }
-        if (mark.genderless()) out.append(Text.literal(" · ponle " + (mark.female() ? "hembra" : "macho")).withColor(0xFFFFFF));
-        if ("reservado".equals(mark.state())) out.append(Text.literal(" · espera").withColor(0xB8BCC6));
-        else if ("falta".equals(mark.state())) out.append(Text.literal(" · falta pareja").withColor(0xFF6B6B));
-        return out;
+    /** Sexo que debe salir la cría de este cruce: «♂», «♀» o «★» si es tu Pokémon final (datos viejos: el sexo de este Pokémon). */
+    static String glyph(com.diosesmon.organizerpc.core.WikiPairs.Mark mark) {
+        if (mark.childGender().isBlank() && mark.next().isBlank()) return mark.female() ? "♀" : "♂";
+        if (mark.childFinal()) return "★";
+        return "F".equals(mark.childGender()) ? "♀" : "♂";
     }
 }
