@@ -83,7 +83,50 @@ final class SettingsWindow {
             default -> general(p, ui, lx, r, iw);
         }
 
-        if (ui.button(lx, y + H - 22, iw, 16, "Listo", Ui.Style.LIGHT)) close();
+        int half = (iw - 4) / 2;
+        if (ui.button(lx, y + H - 22, half, 16, "Listo", Ui.Style.LIGHT)) close();
+        updateButton(ui, lx + half + 4, y + H - 22, iw - half - 4);
+    }
+
+    /**
+     * Botón de actualizaciones al lado de «Listo»: buscar a mano, ver si hay versión nueva, descargarla.
+     * Además el mod revisa solo cada 30 minutos mientras juegas.
+     */
+    private static void updateButton(Ui ui, int x, int y, int w) {
+        var st = com.diosesmon.organizerpc.update.Updater.state();
+        String latest = com.diosesmon.organizerpc.update.Updater.latestVersion();
+        long manual = com.diosesmon.organizerpc.update.Updater.manualAt();
+        boolean justChecked = manual > 0 && System.currentTimeMillis() - manual < 6000L;
+        boolean failed = com.diosesmon.organizerpc.update.Updater.lastCheckFailed();
+        String label;
+        Ui.Style style = Ui.Style.NORMAL;
+        switch (st) {
+            case CHECKING -> label = "↻ Buscando…";
+            case AVAILABLE -> { label = "⬇ v" + latest; style = Ui.Style.WARN; }
+            case DOWNLOADING -> label = "⬇ …";
+            case READY -> { label = "✔ Reinicia"; style = Ui.Style.PRIMARY; }
+            case ERROR -> { label = latest.isEmpty() ? "↻ Buscar" : "↻ Reintentar"; style = Ui.Style.DANGER; }
+            case DISABLED -> label = "—";
+            default -> label = justChecked ? (failed ? "✖ Sin red" : "✔ Al día") : "↻ Buscar";
+        }
+        if (ui.button(x, y, w, 16, label, style)) {
+            if (st == com.diosesmon.organizerpc.update.Updater.State.AVAILABLE
+                    || st == com.diosesmon.organizerpc.update.Updater.State.ERROR && !latest.isEmpty()) {
+                com.diosesmon.organizerpc.update.Updater.downloadAsync();
+            } else {
+                com.diosesmon.organizerpc.update.Updater.checkNow();
+            }
+        }
+        String cur = "v" + com.diosesmon.organizerpc.update.Updater.currentVersion();
+        ui.tooltip(x, y, w, 16, switch (st) {
+            case AVAILABLE -> new String[]{"Actualizaciones · " + cur, "", "Hay una versión nueva: v" + latest + ".", "Click: descargarla. Se instala al cerrar el juego."};
+            case READY -> new String[]{"Actualizaciones · " + cur, "", "v" + latest + " descargada.", "Reinicia el juego para usarla."};
+            case DOWNLOADING -> new String[]{"Actualizaciones · " + cur, "", "Descargando v" + latest + "…"};
+            case ERROR -> new String[]{"Actualizaciones · " + cur, "", com.diosesmon.organizerpc.update.Updater.error(), "Click: reintentar."};
+            case DISABLED -> new String[]{"Actualizaciones · " + cur, "", "Desactivadas en esta copia del mod."};
+            default -> new String[]{"Actualizaciones · " + cur, "", justChecked && failed ? "No se pudo llegar a GitHub." : "Click: buscar ahora.",
+                    "Además se revisa sola cada 30 minutos."};
+        });
     }
 
     /** Versión y actualización desde GitHub, en la cabecera (entre el título y la X). */

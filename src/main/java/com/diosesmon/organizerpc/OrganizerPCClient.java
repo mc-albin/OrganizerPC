@@ -46,6 +46,8 @@ public final class OrganizerPCClient implements ClientModInitializer {
             if (screen instanceof PCGUI gui) PcScreenHook.attach(gui);
         });
         ClientTickEvents.END_CLIENT_TICK.register(MoveExecutor::tick);
+        // Busca actualizaciones otra vez cada 30 minutos mientras juegas
+        ClientTickEvents.END_CLIENT_TICK.register(c -> com.diosesmon.organizerpc.update.Updater.tick());
         // Wiki de crianza (con WikiDiosesmonViewer): parejas que eligió la página y equipo vigilado.
         ClientTickEvents.END_CLIENT_TICK.register(com.diosesmon.organizerpc.cobblemon.WikiSync::tick);
         AfkTracker.register();

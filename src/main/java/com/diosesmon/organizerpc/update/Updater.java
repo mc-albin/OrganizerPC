@@ -83,6 +83,22 @@ public final class Updater {
                 .map(m -> m.getMetadata().getVersion().getFriendlyString()).orElse("0");
     }
 
+    /** While playing, GitHub is asked again this often (only while no update was found yet). */
+    public static final long RECHECK_MS = 30L * 60 * 1000;
+    private static volatile long lastCheckAt;
+    /** True when the last check could not reach GitHub (offline, GitHub down, no release). */
+    private static volatile boolean lastCheckFailed;
+    /** When the player's own check finished (for the "Al día" label); -1 while it runs; 0 when automatic. */
+    private static volatile long manualAt;
+
+    public static boolean lastCheckFailed() {
+        return lastCheckFailed;
+    }
+
+    public static long manualAt() {
+        return manualAt;
+    }
+
     /** Reads the repository from organizerpc-update.properties and checks in the background. */
     public static void checkAsync() {
         repo = readRepo();
@@ -94,16 +110,42 @@ public final class Updater {
         if (state == State.READY) {
             return;
         }
+        fetchLatest();
+    }
+
+    /** Called every client tick: asks GitHub again every 30 minutes while nothing was found. */
+    public static void tick() {
+        if (state == State.UP_TO_DATE && System.currentTimeMillis() - lastCheckAt > RECHECK_MS) {
+            manualAt = 0;
+            fetchLatest();
+        }
+    }
+
+    /** "Buscar" button in Ajustes: checks now (does nothing while a check or download runs). */
+    public static void checkNow() {
+        if (state == State.UP_TO_DATE || state == State.ERROR && latest.isEmpty()) {
+            manualAt = -1;
+            fetchLatest();
+        }
+    }
+
+    private static void fetchLatest() {
+        lastCheckAt = System.currentTimeMillis();
         state = State.CHECKING;
         String url = "https://github.com/" + repo + "/releases/latest/download/latest.json";
         HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(15))
                 .header("User-Agent", "OrganizerPC-Updater").GET().build();
         HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete((res, err) -> {
+            if (manualAt == -1) {
+                manualAt = System.currentTimeMillis();
+            }
             if (err != null || res.statusCode() != 200) {
-                // No release yet, offline or GitHub down: just stay quiet.
+                // No release yet, offline or GitHub down: just stay quiet (tried again later).
+                lastCheckFailed = true;
                 state = State.UP_TO_DATE;
                 return;
             }
+            lastCheckFailed = false;
             try {
                 JsonObject o = JsonParser.parseString(res.body()).getAsJsonObject();
                 String v = o.get("version").getAsString().strip();
