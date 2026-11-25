@@ -80,8 +80,9 @@ public final class BreederExport {
         if (cfg.noWiki.contains(p.getUuid()) || cfg.pairOf(p.getUuid()) != null) return;
         PokemonInfo info = PcReader.info(p);
         // Muy raros (iniciales, fósiles…): con el filtro puesto no son breeders (siguen en la lista para ver crías)
-        boolean breeder = Breeders.isBreeder(info, cfg.breedDitto)
-                && !(cfg.breedNoUltra && com.diosesmon.organizerpc.core.UltraRare.is(info.dex()));
+        boolean fits = Breeders.isBreeder(info, cfg.breedDitto);
+        boolean rare = fits && cfg.breedNoUltra && com.diosesmon.organizerpc.core.UltraRare.is(info.dex());
+        boolean breeder = fits && !rare;
         String species = p.getSpecies().getTranslatedName().getString();
         try {
             String form = p.getForm().getName();
@@ -89,7 +90,7 @@ public final class BreederExport {
         } catch (Exception ignored) {
             // Sin forma: solo la especie.
         }
-        out.add(new Breeders.Entry(info.dex(), species, info.gender(), info.eggGroups(), info.ivs(), place, info.uuid(), breeder));
+        out.add(new Breeders.Entry(info.dex(), species, info.gender(), info.eggGroups(), info.ivs(), place, info.uuid(), breeder, rare));
     }
 
     /** Escribe el archivo y devuelve cuántos breeders tiene. */

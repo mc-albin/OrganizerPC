@@ -26,9 +26,19 @@ public final class Breeders {
      * (columna «B»); si no, va igual con «S» para que la wiki pueda seguir la crianza (crías que nacen, bebés…).
      */
     public record Entry(int dex, String species, int gender, Set<EggGroupKey> eggGroups, int[] ivs, String place, UUID id,
-                        boolean breeder) {
+                        boolean breeder, boolean rare) {
         public Entry(int dex, String species, int gender, Set<EggGroupKey> eggGroups, int[] ivs, String place, UUID id) {
-            this(dex, species, gender, eggGroups, ivs, place, id, true);
+            this(dex, species, gender, eggGroups, ivs, place, id, true, false);
+        }
+
+        public Entry(int dex, String species, int gender, Set<EggGroupKey> eggGroups, int[] ivs, String place, UUID id,
+                     boolean breeder) {
+            this(dex, species, gender, eggGroups, ivs, place, id, breeder, false);
+        }
+
+        /** «B» breeder, «U» breeder muy raro apagado (la wiki solo lo usa como hembra de tu línea), «S» el resto. */
+        public String type() {
+            return breeder ? "B" : rare ? "U" : "S";
         }
     }
 
@@ -82,7 +92,7 @@ public final class Breeders {
             iv.append(e.ivs()[i]);
         }
         return e.dex() + " | " + clean(e.species()) + " | " + genderLabel(e.gender()) + " | " + String.join(", ", groups)
-                + " | " + iv + " | " + clean(e.place()) + " | " + e.id() + " | " + (e.breeder() ? "B" : "S");
+                + " | " + iv + " | " + clean(e.place()) + " | " + e.id() + " | " + e.type();
     }
 
     /** Sin « | » ni saltos de línea dentro de una columna. */
