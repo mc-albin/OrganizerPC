@@ -49,6 +49,10 @@ final class SidePanel {
     static void layout(OrganizerPanel p, Ui ui) {
         speciesFieldShown = false;
         if (p.sideCollapsed()) {
+            if (PanelState.moveOpen) {
+                p.closeMoveWindow();
+                PanelState.selection.clear();
+            }
             int[] t = p.sideTab();
             boolean hov = ui.hover(t[0], t[1], t[2], t[3]);
             ui.box(t[0], t[1], t[2] + 4, t[3], hov ? Ui.BTN_HOVER : Ui.BG, hov ? Ui.THEME : Ui.BORDER);
@@ -89,6 +93,10 @@ final class SidePanel {
                     "Queda una pestañita en el borde", "derecho para volver a abrirlo.");
             if (ui.area(t[0], t[1], t[2], t[3])) {
                 p.cfg().sidePanelCollapsed = true;
+                // Oculto no hace nada: sale de Mover (sin marcas) y de editar categoría.
+                p.closeMoveWindow();
+                PanelState.selection.clear();
+                if (PanelState.editing != null) p.finishEditing();
                 p.unfocusFields();
                 OrganizerPCClient.saveConfig();
             }
