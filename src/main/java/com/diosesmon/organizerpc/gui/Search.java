@@ -37,6 +37,15 @@ final class Search {
     static final Set<Integer> genders = new java.util.TreeSet<>();
     /** Solo shinys. */
     static boolean shinyOnly;
+    /** Generaciones marcadas (1 a 9), por número de Pokédex. Vacío: todas. */
+    static final Set<Integer> gens = new java.util.TreeSet<>();
+    /** Último nº de Pokédex de cada generación: Gen 1 hasta el 151, Gen 2 hasta el 251… */
+    static final int[] GEN_END = {151, 251, 386, 493, 649, 721, 809, 905, 1025};
+
+    static int genOf(int dex) {
+        for (int i = 0; i < GEN_END.length; i++) if (dex <= GEN_END[i]) return i + 1;
+        return GEN_END.length;
+    }
     /** Tamaños del filtro (nombres del mod de tamaños: Tiny, Small…); vacío = da igual. */
     static final Set<String> sizes = new java.util.LinkedHashSet<>();
     static String text = "";
@@ -52,7 +61,7 @@ final class Search {
     }
 
     static boolean filterActive() {
-        if (!groups.isEmpty() || count >= 0 || !genders.isEmpty() || shinyOnly || !sizes.isEmpty()) return true;
+        if (!groups.isEmpty() || count >= 0 || !genders.isEmpty() || shinyOnly || !sizes.isEmpty() || !gens.isEmpty()) return true;
         for (int v : stats) if (v >= 0) return true;
         return false;
     }
@@ -64,6 +73,7 @@ final class Search {
     static void clear() {
         groups.clear();
         genders.clear();
+        gens.clear();
         sizes.clear();
         shinyOnly = false;
         eggOnly = false;
@@ -219,6 +229,7 @@ final class Search {
             for (EggGroupKey g : groups) names.add(g.label);
             l.add("· Filtro: " + (eggExact ? "justo " + String.join(" + ", names) : eggOnly ? "únicamente " + String.join(" y ", names) : String.join(" o ", names)));
         }
+        if (!gens.isEmpty()) l.add("· Filtro: generación " + String.join(" o ", gens.stream().map(String::valueOf).toList()));
         if (shinyOnly) l.add("· Filtro: shiny");
         if (!sizes.isEmpty()) l.add("· Filtro: tamaño " + String.join(" o ", sizes));
         if (!genders.isEmpty()) {
@@ -238,6 +249,7 @@ final class Search {
             } else if (eggOnly ? p.eggGroups().isEmpty() || !groups.containsAll(p.eggGroups()) : Collections.disjoint(groups, p.eggGroups())) return false;
         }
         if (!genders.isEmpty() && !genders.contains(p.gender())) return false;
+        if (!gens.isEmpty() && !gens.contains(genOf(p.dex()))) return false;
         if (wantsSex(terms) && com.diosesmon.organizerpc.cobblemon.SpeciesTraits.singleGender(p.speciesId())) {
             singleHidden.add(SidePanel.speciesName(p.speciesId()));
             return false;
@@ -286,7 +298,7 @@ final class Search {
     private static String key() {
         int pairsHash = 0;
         for (var bp : com.diosesmon.organizerpc.OrganizerPCClient.config().pairs) pairsHash = pairsHash * 31 + bp.number * 7 + bp.members.hashCode();
-        return pairsHash + "|" + text + "|" + groups + "|" + eggOnly + eggExact + countOrMore + "|" + genders + "|" + shinyOnly + "|" + sizes + "|" + java.util.Arrays.toString(stats) + "|" + count;
+        return pairsHash + "|" + text + "|" + groups + "|" + eggOnly + eggExact + countOrMore + "|" + genders + "|" + gens + "|" + shinyOnly + "|" + sizes + "|" + java.util.Arrays.toString(stats) + "|" + count;
     }
 
     static String genderLabel(int g) {
@@ -348,7 +360,7 @@ final class Search {
 
     // ------------------------------------------------------------------ ventanita de filtro
 
-    static final int POP_W = 214, POP_H = 250;
+    static final int POP_W = 214, POP_H = 274;
 
     /** Posición de la ventanita: debajo del botón de filtro, sin salirse de la pantalla. */
     static int[] popupRect(OrganizerPanel p) {
@@ -408,6 +420,19 @@ final class Search {
             if (ui.chip(bx, ry, i == 2 ? iw - 2 * (gw + 2) : gw, 11, gl[i], genders.contains(gv[i]), gc[i])) {
                 if (!genders.remove((Integer) gv[i])) genders.add(gv[i]);
             }
+        }
+        ry += 15;
+
+        ui.small(lx, ry, "Generación", Ui.TEXT_DIM);
+        ry += 9;
+        int gn = GEN_END.length, gcw = (iw - (gn - 1) * 2) / gn;
+        for (int i = 0; i < gn; i++) {
+            int g = i + 1, bx = lx + i * (gcw + 2), bw = i == gn - 1 ? iw - (gn - 1) * (gcw + 2) : gcw;
+            if (ui.chip(bx, ry, bw, 11, String.valueOf(g), gens.contains(g), Ui.CYAN)) {
+                if (!gens.remove((Integer) g)) gens.add(g);
+            }
+            ui.tooltip(bx, ry, bw, 11, "Generación " + g, "Pokédex del " + (i == 0 ? 1 : GEN_END[i - 1] + 1) + " al " + GEN_END[i] + ".",
+                    "", "Puedes marcar varias.");
         }
         ry += 15;
 
