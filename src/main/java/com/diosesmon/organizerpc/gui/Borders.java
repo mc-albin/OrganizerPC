@@ -100,7 +100,7 @@ final class Borders {
         ry += 20;
         if (row(ui, lx, ry, iw, "Shinys", c.borderShiny, 0, "Borde arcoíris que se mueve.")) c.borderShiny = !c.borderShiny;
         ry += 20;
-        if (row(ui, lx, ry, iw, "Muy raros", c.borderUltra, PURPLE, "Borde morado: su aparición más común", "es Muy raro (iniciales, fósiles…).")) c.borderUltra = !c.borderUltra;
+        if (row(ui, lx, ry, iw, "Muy raros", c.borderUltra, PURPLE, "Borde morado: tienen alguna aparición", "Muy raro: iniciales, fósiles, Larvitar…")) c.borderUltra = !c.borderUltra;
     }
 
     private static boolean row(Ui ui, int x, int y, int w, String label, boolean on, int color, String... tip) {

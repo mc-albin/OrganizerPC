@@ -271,8 +271,9 @@ final class SettingsWindow {
             breedersChanged();
         }
         if (toggle(ui, lx + hw + 4, r, iw - hw - 4, "Usar muy raros", !c.breedNoUltra,
-                "Muy raros: su aparición más común es Muy raro,",
-                "como los iniciales o los fósiles.",
+                "Muy raros: tienen alguna aparición Muy raro",
+                "en la Pokédex de la wiki: iniciales, fósiles,",
+                "Larvitar, Gible, Eevee, Dratini…",
                 "",
                 "No: la wiki nunca los usa para criar.",
                 "Sí: los puede elegir como cualquier otro.")) {

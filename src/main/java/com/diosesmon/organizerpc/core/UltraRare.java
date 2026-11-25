@@ -8,8 +8,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Especies «muy raras» (ultra-rare) según la Pokédex de la wiki: su aparición natural más común es Muy raro
- * (iniciales, fósiles…). Las evoluciones sin aparición propia toman la de su preevolución.
+ * Especies «muy raras» (ultra-rare) según la Pokédex de la wiki: tienen alguna aparición Muy raro en la Pokédex o son muy raros en el Safari, con toda su familia
+ * (iniciales, fósiles, Larvitar, Gible, Eevee…). Las evoluciones sin aparición propia toman la de su preevolución.
  * Lista en {@code assets/organizerpc/ultra_rare.txt} (un nº de Pokédex por línea).
  */
 public final class UltraRare {
