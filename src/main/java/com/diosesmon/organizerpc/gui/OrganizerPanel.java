@@ -482,9 +482,9 @@ public final class OrganizerPanel {
         return mx >= sx && mx < sx + sw && my >= sy && my < sy + sh;
     }
 
-    /** Pestañita para ocultar el panel: sobresale por su borde izquierdo, como la cinta de un libro. */
+    /** Botón para ocultar el panel: dentro de su cabecera, a la derecha de las pestañas. */
     int[] hideTab() {
-        return new int[]{sx - 12, sy + 6, 13, 24};
+        return new int[]{sx + sw - SidePanel.PAD - 16, sy + 3, 16, 16};
     }
 
     /**

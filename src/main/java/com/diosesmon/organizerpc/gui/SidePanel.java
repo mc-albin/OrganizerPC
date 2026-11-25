@@ -52,8 +52,8 @@ final class SidePanel {
             int[] t = p.sideTab();
             boolean hov = ui.hover(t[0], t[1], t[2], t[3]);
             ui.box(t[0], t[1], t[2] + 4, t[3], hov ? Ui.BTN_HOVER : Ui.BG, hov ? Ui.THEME : Ui.BORDER);
-            ui.textCenter(t[0] + t[2] / 2 + 1, t[1] + t[3] / 2 - 4, "", hov ? Ui.TEXT : Ui.TEXT_DIM);
-            ui.tooltip(t[0], t[1], t[2], t[3], "Mostrar el panel", "(Categorías y Mover)");
+            chevron(ui, t[0] + t[2] / 2 - 1, t[1] + t[3] / 2, false, hov ? Ui.TEXT : Ui.TEXT_DIM);
+            ui.tooltip(t[0], t[1], t[2], t[3], "Mostrar el panel", "Categorías y Mover");
             if (ui.area(t[0], t[1], t[2], t[3])) {
                 p.cfg().sidePanelCollapsed = false;
                 OrganizerPCClient.saveConfig();
@@ -68,7 +68,7 @@ final class SidePanel {
             ui.text(x + PAD + 16, y + 7, PanelState.preview != null ? "Vista previa" : MoveExecutor.isRunning() ? "Moviendo" : "Confirmar", Ui.TEXT);
         } else {
             // Pestañas: mismo recuadro y mismo tamaño para las dos.
-            int tw = (w - PAD * 2 - 2) / 2;
+            int tw = (w - PAD * 2 - 4 - 16) / 2;
             boolean move = PanelState.moveOpen;
             if (ui.button(x + PAD, y + 3, tw, 16, "Categorías", Icons.TAG, move ? Ui.Style.NORMAL : Ui.Style.SELECTED)) {
                 if (move) p.closeMoveWindow();
@@ -79,14 +79,14 @@ final class SidePanel {
             }
             ui.tooltip(x + PAD + tw + 2, y + 3, tw, 16, "Marca Pokémon y muévelos a otra caja.");
         }
-        // Ocultar: cinta que sobresale por el borde izquierdo del panel, como la de un libro.
+        // Ocultar: botón dentro de la cabecera del panel, a la derecha de las pestañas, con flecha hacia la derecha.
         if (!special) {
             int[] t = p.hideTab();
             boolean th = ui.hover(t[0], t[1], t[2], t[3]);
-            ui.box(t[0], t[1], t[2] + 3, t[3], th ? Ui.BTN_HOVER : Ui.BG, th ? Ui.THEME : Ui.BORDER);
-            ui.rect(t[0] + 2, t[1] + 1, 1, t[3] - 2, Ui.alpha(Ui.THEME, th ? 0xFF : 0x90));
-            ui.textCenter(t[0] + t[2] / 2 + 2, t[1] + t[3] / 2 - 4, "", th ? Ui.TEXT : Ui.TEXT_DIM);
-            ui.tooltip(t[0], t[1], t[2], t[3], "Ocultar el panel", "Queda una pestañita en el borde derecho para volver.");
+            ui.box(t[0], t[1], t[2], t[3], th ? Ui.BTN_HOVER : Ui.BTN, th ? Ui.THEME : Ui.BORDER);
+            chevron(ui, t[0] + t[2] / 2 - 1, t[1] + t[3] / 2, true, th ? Ui.TEXT : Ui.TEXT_DIM);
+            ui.tooltip(t[0], t[1], t[2], t[3], "Ocultar el panel",
+                    "Queda una pestañita en el borde", "derecho para volver a abrirlo.");
             if (ui.area(t[0], t[1], t[2], t[3])) {
                 p.cfg().sidePanelCollapsed = true;
                 p.unfocusFields();
@@ -136,6 +136,15 @@ final class SidePanel {
     }
 
     /** Interruptor tipo móvil. */
+    /** Flecha de píxeles centrada en (cx, cy): derecha = ocultar, izquierda = mostrar. */
+    static void chevron(Ui ui, int cx, int cy, boolean right, int color) {
+        for (int i = 0; i < 4; i++) {
+            int dx = right ? i : 3 - i;
+            ui.rect(cx - 1 + dx, cy - 4 + i, 2, 1, color);
+            ui.rect(cx - 1 + dx, cy + 3 - i, 2, 1, color);
+        }
+    }
+
     static boolean toggle(Ui ui, int x, int y, boolean on) {
         int col = on ? Ui.GREEN : Ui.LINE;
         ui.round(x, y, 18, 9, Ui.alpha(col, on ? 0xC0 : 0xFF));
