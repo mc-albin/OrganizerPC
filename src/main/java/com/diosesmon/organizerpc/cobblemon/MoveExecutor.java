@@ -28,6 +28,8 @@ public final class MoveExecutor {
     public enum Status { IDLE, RUNNING, DONE, STOPPED, FAILED }
 
     private static final int CONFIRM_TIMEOUT_TICKS = 100;
+    /** Pausa entre movimientos (ms): ritmo de una persona rápida, sin chocar con límites de mensajes por segundo. */
+    private static final long PAUSE_MS = 200L;
 
     private static MoveExecutor current;
 
@@ -37,6 +39,7 @@ public final class MoveExecutor {
     private int index;
     private boolean waiting;
     private int waitTicks;
+    private long readyAt;
     private boolean stopRequested;
     private Status status = Status.RUNNING;
     private String message = "";
@@ -97,6 +100,7 @@ public final class MoveExecutor {
             if (confirmed(op)) {
                 waiting = false;
                 index++;
+                readyAt = System.currentTimeMillis() + PAUSE_MS;
             } else if (++waitTicks > CONFIRM_TIMEOUT_TICKS) {
                 finish(Status.FAILED, "El servidor no confirmó el paso " + (index + 1) + ". Detenido.");
             }
@@ -106,6 +110,7 @@ public final class MoveExecutor {
             finish(Status.STOPPED, "Detenido por el usuario en " + index + "/" + ops.size());
             return;
         }
+        if (index < ops.size() && System.currentTimeMillis() < readyAt) return;   // pausa entre movimientos
         if (index >= ops.size()) {
             finish(Status.DONE, "Listo: " + ops.size() + " pasos confirmados por el servidor");
             return;
