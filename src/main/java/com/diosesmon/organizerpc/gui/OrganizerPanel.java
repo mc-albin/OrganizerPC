@@ -276,7 +276,8 @@ public final class OrganizerPanel {
     void partyIvMarks(DrawContext ctx) {
         for (var slot : partySlots()) {
             Pokemon mon = slot.getPokemon();
-            if (mon != null) SlotMarks.ivBar(ctx, slot.getX(), slot.getY(), PcReader.info(mon));
+            // Más abajo que en las cajas: abajo a la derecha del hueco del equipo va el objeto equipado
+            if (mon != null) SlotMarks.ivBar(ctx, slot.getX(), slot.getY() + 6, PcReader.info(mon));
         }
     }
 

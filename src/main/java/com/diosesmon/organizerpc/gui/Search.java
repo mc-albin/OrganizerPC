@@ -29,6 +29,10 @@ final class Search {
     static int count = -1;
     /** true: únicamente de los grupos marcados (sin grupos extra); false: basta con uno. */
     static boolean eggOnly;
+    /** Grupo huevo «Exactos»: sus grupos son justo los marcados (Bicho + Volador, ni solo Bicho ni solo Volador). */
+    static boolean eggExact;
+    /** ¿Cuántos 31?: «o más» (si no, exactamente). */
+    static boolean countOrMore;
     /** Géneros del filtro (PokemonInfo.MALE…); vacío = da igual. */
     static final Set<Integer> genders = new java.util.TreeSet<>();
     /** Solo shinys. */
@@ -63,6 +67,8 @@ final class Search {
         sizes.clear();
         shinyOnly = false;
         eggOnly = false;
+        eggExact = false;
+        countOrMore = false;
         java.util.Arrays.fill(stats, -1);
         count = -1;
         text = "";
@@ -211,7 +217,7 @@ final class Search {
         if (!groups.isEmpty()) {
             List<String> names = new ArrayList<>();
             for (EggGroupKey g : groups) names.add(g.label);
-            l.add("· Filtro: " + (eggOnly ? "únicamente " + String.join(" y ", names) : String.join(" o ", names)));
+            l.add("· Filtro: " + (eggExact ? "justo " + String.join(" + ", names) : eggOnly ? "únicamente " + String.join(" y ", names) : String.join(" o ", names)));
         }
         if (shinyOnly) l.add("· Filtro: shiny");
         if (!sizes.isEmpty()) l.add("· Filtro: tamaño " + String.join(" o ", sizes));
@@ -221,13 +227,15 @@ final class Search {
             l.add("· Filtro: " + String.join(" o ", gl));
         }
         for (StatKey k : StatKey.values()) if (stats[k.ordinal()] >= 0) l.add("· Filtro: " + k.shortLabel + " en " + stats[k.ordinal()]);
-        if (count >= 0) l.add("· Filtro: " + count + "x31");
+        if (count >= 0) l.add("· Filtro: " + count + "x31" + (countOrMore ? " o más" : ""));
         return l;
     }
 
     private static boolean matches(PokemonInfo p, List<Term> terms) {
         if (!groups.isEmpty()) {
-            if (eggOnly ? p.eggGroups().isEmpty() || !groups.containsAll(p.eggGroups()) : Collections.disjoint(groups, p.eggGroups())) return false;
+            if (eggExact) {
+                if (!p.eggGroups().equals(groups)) return false;
+            } else if (eggOnly ? p.eggGroups().isEmpty() || !groups.containsAll(p.eggGroups()) : Collections.disjoint(groups, p.eggGroups())) return false;
         }
         if (!genders.isEmpty() && !genders.contains(p.gender())) return false;
         if (wantsSex(terms) && com.diosesmon.organizerpc.cobblemon.SpeciesTraits.singleGender(p.speciesId())) {
@@ -240,7 +248,7 @@ final class Search {
             int want = stats[k.ordinal()];
             if (want >= 0 && p.iv(k) != want) return false;
         }
-        if (count >= 0 && p.perfectIvCount() != count) return false;
+        if (count >= 0 && (countOrMore ? p.perfectIvCount() < count : p.perfectIvCount() != count)) return false;
         String name = null;
         for (Term t : terms) {
             boolean ok = switch (t) {
@@ -278,7 +286,7 @@ final class Search {
     private static String key() {
         int pairsHash = 0;
         for (var bp : com.diosesmon.organizerpc.OrganizerPCClient.config().pairs) pairsHash = pairsHash * 31 + bp.number * 7 + bp.members.hashCode();
-        return pairsHash + "|" + text + "|" + groups + "|" + eggOnly + "|" + genders + "|" + shinyOnly + "|" + sizes + "|" + java.util.Arrays.toString(stats) + "|" + count;
+        return pairsHash + "|" + text + "|" + groups + "|" + eggOnly + eggExact + countOrMore + "|" + genders + "|" + shinyOnly + "|" + sizes + "|" + java.util.Arrays.toString(stats) + "|" + count;
     }
 
     static String genderLabel(int g) {
@@ -340,7 +348,7 @@ final class Search {
 
     // ------------------------------------------------------------------ ventanita de filtro
 
-    static final int POP_W = 214, POP_H = 248;
+    static final int POP_W = 214, POP_H = 250;
 
     /** Posición de la ventanita: debajo del botón de filtro, sin salirse de la pantalla. */
     static int[] popupRect(OrganizerPanel p) {
@@ -371,11 +379,14 @@ final class Search {
 
         ui.small(lx, ry, "Grupo huevo", Ui.TEXT_DIM);
         // Alguno: basta con uno de los marcados. Solo estos: todos sus grupos deben estar marcados.
-        int mw = 52;
-        if (ui.chip(x + w - 6 - 2 * mw - 2, ry - 2, mw, 10, "Alguno", !eggOnly, Ui.BLUE)) eggOnly = false;
-        ui.tooltip(x + w - 6 - 2 * mw - 2, ry - 2, mw, 10, "Entra si es de alguno de los grupos marcados.");
-        if (ui.chip(x + w - 6 - mw, ry - 2, mw, 10, "Solo estos", eggOnly, Ui.BLUE)) eggOnly = true;
-        ui.tooltip(x + w - 6 - mw, ry - 2, mw, 10, "Únicamente de esos grupos: con solo Campo,", "nada de Campo + Hada ni otros extra.");
+        // Exactos: sus grupos son justo los marcados (Bicho + Volador; ni solo Bicho ni solo Volador).
+        int mw = 46, ex = x + w - 6 - 3 * mw - 4;
+        if (ui.chip(ex, ry - 2, mw, 10, "Alguno", !eggOnly && !eggExact, Ui.BLUE)) { eggOnly = false; eggExact = false; }
+        ui.tooltip(ex, ry - 2, mw, 10, "Entra si es de alguno", "de los grupos marcados.");
+        if (ui.chip(ex + mw + 2, ry - 2, mw, 10, "Solo estos", eggOnly && !eggExact, Ui.BLUE)) { eggOnly = true; eggExact = false; }
+        ui.tooltip(ex + mw + 2, ry - 2, mw, 10, "Únicamente de esos grupos.", "Con Bicho y Volador marcados entran", "solo Bicho, solo Volador", "y Bicho + Volador.");
+        if (ui.chip(ex + 2 * (mw + 2), ry - 2, mw, 10, "Exactos", eggExact, Ui.BLUE)) { eggExact = true; eggOnly = false; }
+        ui.tooltip(ex + 2 * (mw + 2), ry - 2, mw, 10, "Justo esa combinación.", "Con Bicho y Volador marcados entran", "solo los Bicho + Volador:", "ni solo Bicho ni solo Volador.");
         ry += 11;
         EggGroupKey[] gs = EggGroupKey.values();
         int gw = (iw - 4) / 3;
@@ -438,12 +449,20 @@ final class Search {
         ry += 26;
 
         ui.small(lx, ry, "¿Cuántos 31?", Ui.TEXT_DIM);
-        ry += 9;
+        // Exactamente o «o más», como en las categorías
+        int ow = 46, ox = x + w - 6 - 2 * ow - 2;
+        if (ui.chip(ox, ry - 2, ow, 10, "Exacto", !countOrMore, Ui.GOLD)) countOrMore = false;
+        ui.tooltip(ox, ry - 2, ow, 10, "Justo esa cantidad de 31.", "Con 3: solo los 3x31.");
+        if (ui.chip(ox + ow + 2, ry - 2, ow, 10, "o más", countOrMore, Ui.GOLD)) countOrMore = true;
+        ui.tooltip(ox + ow + 2, ry - 2, ow, 10, "Esa cantidad de 31 o más.", "Con 3: 3x31, 4x31, 5x31 y 6x31.");
+        ry += 11;
         int cw = (iw - 14) / 8;
         for (int k = -1; k <= 6; k++) {
             int bx = lx + (k + 1) * (cw + 2);
-            if (ui.chip(bx, ry, k == 6 ? iw - 7 * (cw + 2) : cw, 12, k < 0 ? "—" : k + "", count == k, Ui.GOLD)) count = k;
-            ui.tooltip(bx, ry, cw, 12, k < 0 ? "Da igual" : "Exactamente " + k + "x31");
+            // Click en el que ya está marcado: se quita (vuelve a da igual)
+            if (ui.chip(bx, ry, k == 6 ? iw - 7 * (cw + 2) : cw, 12, k < 0 ? "—" : k + "", count == k, Ui.GOLD)) count = count == k ? -1 : k;
+            ui.tooltip(bx, ry, cw, 12, k < 0 ? new String[]{"Da igual"}
+                    : new String[]{(countOrMore ? k + "x31 o más" : "Exactamente " + k + "x31"), count == k ? "Click otra vez: quitar" : "Click: marcar"});
         }
         ry += 16;
         if (!singleHidden.isEmpty()) {
