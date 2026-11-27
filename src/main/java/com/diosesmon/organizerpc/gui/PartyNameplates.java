@@ -117,7 +117,7 @@ public final class PartyNameplates {
 
             // Solo el símbolo del sexo que debe salir la cría (♂ azul, ♀ rosa; ★ dorada si es la final), grande y con borde
             String g = glyph(mark);
-            int gc = "★".equals(g) ? 0xFFFFD25A : "♀".equals(g) ? 0xFFFF77B4 : 0xFF5DADEC;
+            int gc = "★".equals(g) ? 0xFFFFD25A : "♀".equals(g) ? 0xFFFF77B4 : "⚲".equals(g) ? 0xFFB07CFF : 0xFF5DADEC;
             TextRenderer tr = mc.textRenderer;
             matrices.push();
             matrices.translate(0.0, (0.025F * scale) * 4F, 0.0);
@@ -149,6 +149,7 @@ public final class PartyNameplates {
     static String glyph(com.diosesmon.organizerpc.core.WikiPairs.Mark mark) {
         if (mark.childGender().isBlank() && mark.next().isBlank()) return mark.female() ? "♀" : "♂";
         if (mark.childFinal()) return "★";
+        if ("X".equals(mark.childGender())) return "⚲";   // cría sin sexo: sirve de macho o de hembra
         return "F".equals(mark.childGender()) ? "♀" : "♂";
     }
 }

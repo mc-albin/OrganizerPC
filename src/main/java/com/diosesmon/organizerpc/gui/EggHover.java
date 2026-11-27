@@ -59,9 +59,17 @@ final class EggHover {
                 wiki.add("Cría: tu " + wm.crianza() + " final");
                 wcol.add(Ui.GOLD);
             } else {
-                boolean f = "F".equals(wm.childGender());
-                wiki.add("Cría " + (f ? "HEMBRA" : "MACHO") + (wm.next().isBlank() ? "" : " → " + wm.next()));
-                wcol.add(f ? 0xFFFF77B4 : 0xFF5DADEC);
+                // X: la madre es sin sexo y su cría también; sirve de macho o de hembra sin pagar sexo
+                boolean f = "F".equals(wm.childGender()), x = "X".equals(wm.childGender());
+                wiki.add("Cría " + (x ? "SIN SEXO" : f ? "HEMBRA" : "MACHO") + (wm.next().isBlank() ? "" : " → " + wm.next()));
+                wcol.add(x ? 0xFFB07CFF : f ? 0xFFFF77B4 : 0xFF5DADEC);
+            }
+            // Nació con el sexo equivocado: la wiki no la toma y pide criar otra
+            for (String n : wm.notes()) {
+                if (n.startsWith("La que nació")) {
+                    wiki.add(n);
+                    wcol.add(0xFFFF6B6B);
+                }
             }
             if (wm.partner() != null) {
                 wiki.add("Con " + Pairs.name(p, wm.partner()));
@@ -72,7 +80,8 @@ final class EggHover {
                 wcol.add(falta ? 0xFFFF6B6B : Ui.TEXT);
             }
             if (wm.genderless()) {
-                wiki.add("Sin sexo: ponle " + (wm.female() ? "hembra" : "macho"));
+                // A un sin sexo no se le pone sexo: va en ese lugar tal cual, sin pagar
+                wiki.add("Sin sexo · va de " + (wm.female() ? "hembra" : "macho"));
                 wcol.add(wm.female() ? 0xFFFF77B4 : 0xFF5DADEC);
             }
             if (!wm.brazal().isBlank()) {
@@ -92,8 +101,8 @@ final class EggHover {
             } else {
             wiki.add(wm.crianza() + " · " + (wm.pair() > 0 ? wm.label() : "espera una cría"));
             if (wm.partner() != null) wiki.add("Cría con: " + Pairs.name(p, wm.partner()));
-            // Macho con hembra siempre: solo a un sin sexo hay que ponerle el sexo
-            wiki.add(wm.genderless() ? "Sin sexo: ponle " + (wm.female() ? "hembra" : "macho · se paga") : "Va como " + (wm.female() ? "hembra" : "macho"));
+            // Macho con hembra siempre: un sin sexo va en cualquiera de los dos lugares, sin ponerle sexo ni pagar
+            wiki.add(wm.genderless() ? "Sin sexo · va de " + (wm.female() ? "hembra" : "macho") : "Va como " + (wm.female() ? "hembra" : "macho"));
             if (!wm.brazal().isBlank()) wiki.add("Brazal: pasa " + wm.brazal());
             wiki.addAll(wm.notes());   // con qué cría se junta, qué sale y a dónde va
             if (wm.pair() > 0) wiki.add("Estado: " + wm.stateLabel());
